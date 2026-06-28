@@ -1,0 +1,12 @@
+{
+  "name": "dyngraph",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "test": "mocha --recursive"
+  },
+  "devDependencies": {
+    "mocha": "^10.2.0",
+    "chai": "^4.3.7"
+  }
+}
