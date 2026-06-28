@@ -47,5 +47,11 @@ Run unit and e2e tests locally:
 
 CI: A GitHub Actions workflow is included (.github/workflows/ci.yml) that runs unit tests and Playwright Firefox e2e on push and pull requests.
 
+See also:
+
+- .github/copilot-instructions.md — developer-oriented overview, architecture and testing guidance (useful for contributors).
+- ROADMAP.md — planned work and priorities.
+- IMPROVEMENT_IDEAS.md — canonical list of tracked improvement ideas (IDs can be referenced in issues/PRs).
+
 
 ![heptagon with traces on](https://github.com/tiborh/dyngraph/blob/master/img/heptagon_trace.png?raw=true)
