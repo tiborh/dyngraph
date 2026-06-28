@@ -1,28 +1,62 @@
+/**
+ * Physics simulation parameters for node forces and animation.
+ * All values can be modified at runtime via modify_params() to tune simulation behavior.
+ * @type {object}
+ */
 const node_params = {
-    link_max_length: 30, // 30
-    link_min_length: 20, // 20
-    dist_modifier:   10, // 10
-    large_dist_div:  40, // 40
-    small_dist_div:  30, // 30
-    dist_threshold: 100, // 100
-    label_offset_x:   0, // 0
-    label_offset_y:   0, // 0
-    nudge_size:       5, // 5
-    fx_multip:        1, // 1
-    fy_multip:        1, // 1
-    anim_timeout:    10, // 10
+    link_max_length: 30,   // Target maximum edge length; nodes beyond this attract
+    link_min_length: 20,   // Target minimum edge length; nodes closer repel
+    dist_modifier:   10,   // Affects attraction force magnitude for connected nodes
+    large_dist_div:  40,   // Divisor for attraction force at large distances
+    small_dist_div:  30,   // Divisor for repulsion force at small distances
+    dist_threshold: 100,   // Distance threshold; repulsion only applies within this range
+    label_offset_x:   0,   // Horizontal offset for node labels
+    label_offset_y:   0,   // Vertical offset for node labels
+    nudge_size:       5,   // Pixel distance for manual nudge controls
+    fx_multip:        1,   // Multiplier for x-axis forces
+    fy_multip:        1,   // Multiplier for y-axis forces
+    anim_timeout:    10,   // Animation frame delay in milliseconds
 };
+
+/**
+ * Update a node physics parameter at runtime.
+ * @param {string} param - Parameter name (must exist in node_params)
+ * @param {number} value - New value for the parameter
+ */
 function modify_params(param,value) {
-    //console.log("param: " + param + ", value: " + value);
     if (Object.keys(node_params).indexOf(param) != -1) {
 	node_params[param] = value;
     } else
 	console.log("Invalid node_param has been received: " + param);
 }
+
+/**
+ * Convert radians to degrees.
+ * @param {number} rad - Angle in radians
+ * @returns {number} Angle in degrees
+ */
 function rad_to_deg(rad) {
     return(rad * (180 / Math.PI));
 }
+
+/**
+ * Visual representation of a graph vertex with physics simulation.
+ * Maintains position, velocity (forces), color, and shape information.
+ * @class Node
+ */
 class Node {
+    /**
+    * Create a new node for visualization.
+    * @param {string} name - Unique identifier for this node
+    * @param {string} shape - Shape code: 'c'=circle, 's'=square, 'r'=rectangle, 'e'=ellipse, 't'=triangle
+    * @param {number} size0 - Primary dimension (width/diameter)
+    * @param {number} size1 - Secondary dimension (height; ignored for circle/square)
+    * @param {object} cols - Color palette with CSS color values
+    * @param {object} rnd - Flags indicating which colors should be randomized
+    * @param {number} x - Initial x coordinate
+    * @param {number} y - Initial y coordinate
+    * @param {CanvasRenderingContext2D} c2d - Canvas 2D context for rendering
+    */
     constructor( name, shape, size0, size1, cols, rnd, x, y, c2d) {
         this.name = name;
         this.shape = shape;
@@ -31,15 +65,28 @@ class Node {
 	this.refresh_colours(cols,rnd);
         this.x = x;
         this.y = y;
-        // this.links = [];
-        // this.backLinks = [];
         this.c2d = c2d;
-        this.fx = 0;
-        this.fy = 0;
+        this.fx = 0;      // Accumulated x-axis force
+        this.fy = 0;      // Accumulated y-axis force
 	this.visited = false;
+	this.group = null;  // Group name (for group-based styling)
     }
+
+    /**
+    * Mark this node as visited (for graph traversal algorithms).
+    */
     visit() { this.visited = true; }
+
+    /**
+    * Mark this node as unvisited.
+    */
     unvisit() { this.visited = false; }
+
+    /**
+    * Update node colors based on palette and randomization flags.
+    * @param {object} cols - Color palette
+    * @param {object} rnd - Randomization flags for each color type
+    */
     refresh_colours(cols,rnd) {
         this.fillcolour = rnd.fill_colour ? gen_colour() : cols.fill_colour;
 	this.fontcolour = rnd.font_colour ? gen_colour() : cols.font_colour;
@@ -49,10 +96,55 @@ class Node {
 	this.traceoutlcolour = rnd.trc_oli_col ? gen_colour() : cols.trc_oli_col;
 	this.tracelinecolour = rnd.trc_lin_col ? gen_colour() : cols.trc_lin_col;
     }
+
+    /**
+    * Assign this node to a group.
+    * @param {string} groupName - The group to assign this node to
+    */
+    set_group(groupName) {
+	this.group = groupName;
+    }
+
+    /**
+    * Get effective color, considering group overrides.
+    * @param {object} groupColors - Map of group names to color objects
+    * @param {string} colorType - Color property name (e.g., 'fillcolour', 'outlcolour')
+    * @returns {string} CSS color value
+    */
+    get_effective_color(groupColors, colorType) {
+	if (this.group && groupColors[this.group] && groupColors[this.group][colorType]) {
+	    return groupColors[this.group][colorType];
+	}
+	return this[colorType];
+    }
+
+    /**
+    * Get effective size, considering group overrides.
+    * @param {object} groupSizes - Map of group names to size objects {size0, size1}
+    * @param {string} sizeType - Size property name ('size0' or 'size1')
+    * @returns {number} Effective size value
+    */
+    get_effective_size(groupSizes, sizeType) {
+	if (this.group && groupSizes[this.group] && groupSizes[this.group][sizeType] !== undefined) {
+	    return groupSizes[this.group][sizeType];
+	}
+	return this[sizeType];
+    }
+
+    /**
+    * Reset accumulated forces to zero (called each animation frame).
+    * @private
+    */
     reset_force() {
         this.fx = 0;
         this.fy = 0;
     }
+
+    /**
+    * Add attraction/repulsion force from a connected node.
+    * Connected nodes attract if distance > link_max_length, repel if < link_min_length.
+    * @param {Node} otherNode - The other node connected by an edge
+    */
     add_force_connected(otherNode) {
         let dist = this.constructor.calc_dist(this,otherNode);
 	if (dist>node_params.link_max_length) {
@@ -63,6 +155,12 @@ class Node {
             this.fy += (this.y-otherNode.y)/dist*(node_params.link_min_length-dist)/node_params.small_dist_div;
         }
     }
+
+    /**
+    * Add repulsion force from an unconnected (non-adjacent) node.
+    * Repulsion only applies if distance < dist_threshold.
+    * @param {Node} otherNode - A non-adjacent node
+    */
     add_force_unconnected(otherNode) {
 	let dist = this.constructor.calc_dist(this,otherNode);
         if (dist<node_params.dist_threshold) {
@@ -70,26 +168,64 @@ class Node {
             this.fy += (this.y-otherNode.y)/dist;
         }
     }
+
+    /**
+    * Update node position based on accumulated forces. Called once per animation frame.
+    */
     step() {
-        this.x += this.fx*node_params.fx_multip;;
+        this.x += this.fx*node_params.fx_multip;
         this.y += this.fy*node_params.fy_multip;
         this.reset_force();
     }
+
+    /**
+    * Move node up (for manual nudge control).
+    */
     move_up() {
 	this.y -= node_params.nudge_size;
     }
+    /**
+    * Move node down (for manual nudge control).
+    */
     move_down() {
 	this.y += node_params.nudge_size;
     }
+
+    /**
+    * Move node left (for manual nudge control).
+    */
     move_left() {
 	this.x -= node_params.nudge_size;
     }
+
+    /**
+    * Move node right (for manual nudge control).
+    */
     move_right() {
 	this.x += node_params.nudge_size;
     }
+
+    /**
+    * Calculate Euclidean distance between two nodes.
+    * Time complexity: O(1)
+    * @param {Node} n0 - First node
+    * @param {Node} n1 - Second node
+    * @returns {number} Distance between nodes
+    * @static
+    */
     static calc_dist(n0,n1) {
         return Math.sqrt(Math.pow((n0.x-n1.x),2) + Math.pow((n0.y-n1.y),2));
     }
+
+    /**
+    * Draw a node to canvas with optional trace and labels.
+    * Shape is determined by node.shape property.
+    * @param {Node} n - The node to draw
+    * @param {object} p - Drawing parameters
+    * @param {boolean} draw_trace - Whether to use trace colors
+    * @param {boolean} draw_labels - Whether to draw node label/name
+    * @static
+    */
     static draw(n,p,draw_trace,draw_labels) {
 	if (!p.fill_colour)
 	    n.c2d.fillStyle = draw_trace ? n.tracefillcolour : n.fillcolour;
@@ -116,6 +252,15 @@ class Node {
 	    n.c2d.fillText(n.name, n.x + node_params.label_offset_x, n.y + node_params.label_offset_y);
 	}
     }
+
+    /**
+    * Get the connection point on this node for drawing edges (shape-aware).
+    * Returns a point on the node's perimeter closest to otherNode.
+    * @param {Node} n - The node to get point from
+    * @param {Node} otherNode - The target node (used to determine direction)
+    * @returns {number[]} [x, y] coordinates of connection point
+    * @static
+    */
     static get_point(n,otherNode) {
 	switch(n.shape) {
 	case 'c':
@@ -132,36 +277,65 @@ class Node {
 	    return [otherNode.x,otherNode.y];
 	}
     }
+
+    /**
+    * Calculate angle from this node to another (for edge rendering).
+    * @param {Node} n - Origin node
+    * @param {Node} other - Target node
+    * @returns {number} Angle in radians
+    * @static
+    * @private
+    */
     static angleBetween(n,other) {
-	// Calculate the angle...
-	// This is our "0" or start angle..
 	let rotation = -Math.atan2(other.x - n.x, other.y - n.y);
-	rotation = rotation + Math.PI; // 180 degrees
+	rotation = rotation + Math.PI;
 	return rotation;
     }
+
+    /**
+    * Get point on circle perimeter at given angle.
+    * @param {Node} n - Circle node
+    * @param {number} radians - Angle in radians
+    * @returns {number[]} [x, y] coordinates on circle
+    * @static
+    * @private
+    */
     static getPointOnCircle(n,radians) {
-	radians = radians - Math.PI/2; // 0 becomes the top
-	// Calculate the outter point of the line
-	return [Math.round(n.x + Math.cos(radians) * n.size0),  // pos x
-		Math.round(n.y + Math.sin(radians) * n.size0)]; // pos y
+	radians = radians - Math.PI/2;
+	return [Math.round(n.x + Math.cos(radians) * n.size0),
+		Math.round(n.y + Math.sin(radians) * n.size0)];
     }
+
+    /**
+    * Get point on ellipse perimeter at given angle.
+    * @param {Node} n - Ellipse node
+    * @param {number} radians - Angle in radians
+    * @returns {number[]} [x, y] coordinates on ellipse
+    * @static
+    * @private
+    */
     static getPointOnEllipse(n,radians) {
-	radians = radians - Math.PI/2; // 0 becomes the top
-	// Calculate the outter point of the line
-	return [Math.round(n.x + Math.cos(radians) * n.size0),  // pos x
-		Math.round(n.y + Math.sin(radians) * n.size1)]; // pos y
+	radians = radians - Math.PI/2;
+	return [Math.round(n.x + Math.cos(radians) * n.size0),
+		Math.round(n.y + Math.sin(radians) * n.size1)];
     }
+
+    /**
+    * Get edge connection point on rectangle/square node (shape-aware edge anchoring).
+    * Determines which edge of the rectangle is closest to the other node.
+    * @param {Node} n - Rectangle/square node
+    * @param {Node} otherNode - The target node (determines which edge)
+    * @returns {number[]} [x, y] coordinates on rectangle perimeter
+    * @static
+    * @private
+    */
     static getConnectionPoint(n,otherNode) {
-	// full over
 	if (otherNode.y + otherNode.size1 < n.y)
 	    return [n.x + n.size0 / 2, n.y];
-	// full below
 	if (otherNode.y > n.y + n.size1)
 	    return [n.x + n.size0 / 2, n.y + n.size1];
-	// full left
 	if (otherNode.x + otherNode.size0 < n.x)
 	    return [Number(n.x), n.y + n.size1 / 2];
-	// full right
 	if (otherNode.x > n.x + n.size0)
 	    return [n.x + n.size0, n.y + n.size1 / 2];
 

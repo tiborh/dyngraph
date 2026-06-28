@@ -1,45 +1,77 @@
+/**
+ * Graph data structure with undirected edges and physics simulation support.
+ * Maintains three mappings: nodes by index (ns), nodes by name (sn), and adjacency list (adj).
+ * @class Graph
+ */
 class Graph {
+    /**
+    * Initialize a new graph.
+    * @param {string} name - Identifier for the graph
+    */
     constructor(name) {
-        this.name = name;
+       this.name = name;
 	this.nu_vertices = 0;
 	this.nu_edges = 0;
 	this.counter = 0;
-        this.ns = {};
-	this.sn = {};
-	this.adj = {};
-	this.path = [];
+       this.ns = {};        // index -> Node mapping
+	this.sn = {};        // name -> index mapping (reverse lookup)
+	this.adj = {};       // adjacency list: index -> [connected indices]
+	this.path = [];      // vertex indices for path visualization
 	this.path_col = "#ff00ff";
     }
+    /**
+    * Add a vertex (node) to the graph.
+    * @param {Node} node - The Node object to add
+    * @returns {number} The index assigned to this vertex
+    */
     add_vertex(node) {
-        this.ns[this.counter] = node;
+       this.ns[this.counter] = node;
 	this.sn[node.name] = this.counter;
 	this.adj[this.counter] = [];
 	++this.counter;
 	++this.nu_vertices;
         return this.ns.length-1;
     }
+    /**
+    * Remove a vertex by name.
+    * @param {string} name - The name of the node to remove
+    * @returns {boolean} True if removed, false if not found
+    */
     rem_vertex_by_name(name) {
 	if(this.sn[name]===undefined)
 	    return false;
 	return this.rem_vertex(this.sn[name]);
     }
+    /**
+    * Remove a vertex by index. Also removes all connected edges.
+    * @param {number} ind - The index of the vertex to remove
+    * @returns {boolean} True if removed, false if not found
+    */
     rem_vertex(ind) {
 	if(!Object.keys(this.ns).includes(ind.toString()))
 	    return false;
-	//console.log(`vertex ind to remove: ${this.sn[this.ns[ind].name]}`);
 	delete this.sn[this.ns[ind].name];
-	//console.log(`vertex to remove: ${this.ns[ind]}`);
 	delete this.ns[ind];
-	//console.log(`adj to remove: ${this.adj[ind]}`);
 	this.rem_edges(ind);
 	delete this.adj[ind];
 	--this.nu_vertices;
 	return true;
     }
+    /**
+    * Remove all edges connected to a vertex.
+    * @param {number} ind - The vertex index
+    * @private
+    */
     rem_edges(ind) {
 	for(let i = this.adj[ind].length - 1; i > -1; --i)
 	    this.rem_edge(ind,this.adj[ind][i]);
     }
+    /**
+    * Add an undirected edge between two vertices (creates bidirectional connection).
+    * @param {number} v1 - First vertex index
+    * @param {number} v2 - Second vertex index
+    * @returns {boolean} True if edge added, false if already connected or v1==v2
+    */
     add_edge(v1,v2) {
 	if(v1 == v2)
 	    return false;
@@ -49,6 +81,12 @@ class Graph {
 	this.add_uni_edge(v2,v1);
 	return true;
     }
+    /**
+    * Remove an undirected edge (removes both directions).
+    * @param {number} v1 - First vertex index
+    * @param {number} v2 - Second vertex index
+    * @returns {boolean} True if removed, false if edge didn't exist
+    */
     rem_edge(v1,v2) {
 	if(!this.is_connected(v1,v2))
 	    return false;
@@ -57,22 +95,49 @@ class Graph {
 	    this.rem_uni_edge(v2,v1);
 	return true;
     }
+    /**
+    * Add a directional edge (internal; use add_edge for undirected).
+    * @param {number} v1 - Source vertex
+    * @param {number} v2 - Target vertex
+    * @private
+    */
     add_uni_edge(v1,v2) {
 	this.adj[v1].push(Number(v2));
 	++this.nu_edges;
     }
+    /**
+    * Remove a directional edge (internal; use rem_edge for undirected).
+    * @param {number} v1 - Source vertex
+    * @param {number} v2 - Target vertex
+    * @private
+    */
     rem_uni_edge(v1,v2) {
 	this.adj[v1].splice(this.adj[v1].indexOf(v2),1);
 	--this.nu_edges;
     }
+    /**
+    * Move a vertex to a new position.
+    * @param {number} key - Vertex index
+    * @param {number} xpos - New x coordinate
+    * @param {number} ypos - New y coordinate
+    */
     reposition_node(key,xpos,ypos) {
 	this.ns[key].x = xpos;
 	this.ns[key].y = ypos;
     }
+    /**
+    * Check if two vertices are connected (O(n) linear search through adjacency list).
+    * @param {number} index1 - First vertex index
+    * @param {number} index2 - Second vertex index
+    * @returns {boolean} True if connected, false otherwise
+    */
     is_connected(index1,index2) {
-	//console.log(`is connected? ${index1} and ${index2}`);
 	return(this.adj[index1].includes(index2) || this.adj[index2].includes(index1));
     }
+    /**
+    * Draw the current path stored in this.path array.
+    * @private
+    */
     draw_path() {
 	for(let i = 1; i < this.path.length; ++i) {
 	    let n0 = this.ns[this.path[i-1]];
@@ -84,8 +149,13 @@ class Graph {
 	    n0.c2d.stroke();
 	}
     }
+    /**
+    * Draw all nodes and edges to the canvas.
+    * @param {object} params - Node drawing parameters (from node_params)
+    * @param {boolean} draw_trace - Whether to draw trace lines
+    * @param {boolean} draw_labels - Whether to draw node labels
+    */
     draw(params,draw_trace,draw_labels) {
-	//console.log("graph.draw() has been called");
         for (let i in this.ns) {
             Node.draw(this.ns[i],params,draw_trace,draw_labels);
 	    for (let j of this.adj[i])
@@ -94,6 +164,10 @@ class Graph {
         }
 	this.draw_path();
     }
+    /**
+    * Calculate physics forces for all nodes (attraction/repulsion).
+    * Time complexity: O(n²) where n = number of vertices.
+    */
     calc_forces() {
         for(let a_key in this.ns) {
             this.ns[a_key].reset_force();
@@ -107,16 +181,28 @@ class Graph {
 			this.ns[i].add_force_unconnected(this.ns[j]);
 		}
     }
+    /**
+    * Perform one animation step: calculate forces and update node positions.
+    */
     step() {
         this.calc_forces();
         for(let a_key in this.ns) {
             this.ns[a_key].step();
         }
     }
+    /**
+    * Update node colors (applies to all nodes).
+    * @param {object} cols - Color object with CSS color values
+    * @param {object} rnd - Random color flags for each color type
+    */
     refresh_colours(cols,rnd) {
 	for(let a_key in this.ns)
 	    this.ns[a_key].refresh_colours(cols,rnd);
     }
+    /**
+    * Nudge all nodes in a direction.
+    * @param {string} dir - Direction: 'up', 'down', 'left', 'right'
+    */
     nudge(dir) {
 	for(let a_key in g.ns) {
 	    switch(dir) {
@@ -214,8 +300,8 @@ class Graph {
     static connect_node_groups_rand(gr) {
 	let islands = this.sort_islands_by_length(this.discover_node_groups(gr));
 	while(islands.length > 1) {
-	    const i0 = Math.floor(Math.random()*islands[0].length);
-	    const i1 = Math.floor(Math.random()*islands[1].length);
+	    const i0 = Math.floor(rng()*islands[0].length);
+	    const i1 = Math.floor(rng()*islands[1].length);
 	    const ind0 = islands[0][i0];
 	    const ind1 = islands[1][i1];
 	    gr.add_edge(ind0,ind1);

@@ -5,6 +5,18 @@ const elem = {
     endl: "\n",
 };
 let g;
+// Seeded random number generator
+let rng = Math.random;
+function set_seed(seed) {
+    if (seed === "" || seed === null) {
+        rng = Math.random;
+    } else {
+        rng = window.seedrandom(seed);
+    }
+    // Re-shuffle safe colors with new seed
+    safe_colours.sort((a,b) => Math.floor(rng()*2) == 1 ? -1 : 0);
+    safe_colour_index = 0;
+}
 //let node_radius = 5;
 const colours = {
     back_colour: "#171412", // 墨色 「すみいろ」
@@ -19,7 +31,65 @@ const colours = {
 // function str_reverse(str) {
 //     return str.split("").reverse().join("");
 // }
-const safe_colours = ["000000","000033","000066","000099","0000CC","0000FF","003300","003333","003366","003399","0033CC","0033FF","006600","006633","006666","006699","0066CC","0066FF","009900","009933","009966","009999","0099CC","0099FF","00CC00","00CC33","00CC66","00CC99","00CCCC","00CCFF","00FF00","00FF33","00FF66","00FF99","00FFCC","00FFFF","330000","330033","330066","330099","3300CC","3300FF","333300","333333","333366","333399","3333CC","3333FF","336600","336633","336666","336699","3366CC","3366FF","339900","339933","339966","339999","3399CC","3399FF","33CC00","33CC33","33CC66","33CC99","33CCCC","33CCFF","33FF00","33FF33","33FF66","33FF99","33FFCC","33FFFF","660000","660033","660066","660099","6600CC","6600FF","663300","663333","663366","663399","6633CC","6633FF","666600","666633","666666","666699","6666CC","6666FF","669900","669933","669966","669999","6699CC","6699FF","66CC00","66CC33","66CC66","66CC99","66CCCC","66CCFF","66FF00","66FF33","66FF66","66FF99","66FFCC","66FFFF","990000","990033","990066","990099","9900CC","9900FF","993300","993333","993366","993399","9933CC","9933FF","996600","996633","996666","996699","9966CC","9966FF","999900","999933","999966","999999","9999CC","9999FF","99CC00","99CC33","99CC66","99CC99","99CCCC","99CCFF","99FF00","99FF33","99FF66","99FF99","99FFCC","99FFFF","CC0000","CC0033","CC0066","CC0099","CC00CC","CC00FF","CC3300","CC3333","CC3366","CC3399","CC33CC","CC33FF","CC6600","CC6633","CC6666","CC6699","CC66CC","CC66FF","CC9900","CC9933","CC9966","CC9999","CC99CC","CC99FF","CCCC00","CCCC33","CCCC66","CCCC99","CCCCCC","CCCCFF","CCFF00","CCFF33","CCFF66","CCFF99","CCFFCC","CCFFFF","FF0000","FF0033","FF0066","FF0099","FF00CC","FF00FF","FF3300","FF3333","FF3366","FF3399","FF33CC","FF33FF","FF6600","FF6633","FF6666","FF6699","FF66CC","FF66FF","FF9900","FF9933","FF9966","FF9999","FF99CC","FF99FF","FFCC00","FFCC33","FFCC66","FFCC99","FFCCCC","FFCCFF","FFFF00","FFFF33","FFFF66","FFFF99","FFFFCC","FFFFFF"].sort((a,b) => Math.floor(Math.random()*2) == 1 ? -1 : 0 );
+// Group-based styling (allows per-group color and size overrides)
+const group_styles = {};  // Map of group names to {fillcolour, size0, size1, ...}
+
+/**
+ * Add or update a group with custom styling.
+ * @param {string} groupName - Name of the group
+ * @param {object} style - Style object with color/size properties {fillcolour, size0, size1, etc.}
+ */
+function add_group(groupName, style) {
+    group_styles[groupName] = style;
+}
+
+/**
+ * Remove a group and unassign all nodes in it.
+ * @param {string} groupName - Name of the group to remove
+ */
+function remove_group(groupName) {
+    if (g) {
+	for (let i in g.ns) {
+	    if (g.ns[i].group === groupName) {
+		g.ns[i].set_group(null);
+	    }
+	}
+    }
+    delete group_styles[groupName];
+}
+
+/**
+ * Assign a node to a group.
+ * @param {string} nodeName - Name of the node
+ * @param {string} groupName - Name of the group
+ */
+function assign_node_to_group(nodeName, groupName) {
+    if (!g || !g.sn[nodeName]) {
+	console.log("Node not found: " + nodeName);
+	return false;
+    }
+    const node_idx = g.sn[nodeName];
+    g.ns[node_idx].set_group(groupName);
+    return true;
+}
+
+/**
+ * Get all nodes in a group.
+ * @param {string} groupName - Name of the group
+ * @returns {Node[]} Array of nodes in the group
+ */
+function get_group_nodes(groupName) {
+    if (!g) return [];
+    const nodes = [];
+    for (let i in g.ns) {
+	if (g.ns[i].group === groupName) {
+	    nodes.push(g.ns[i]);
+	}
+    }
+    return nodes;
+}
+
+const safe_colours = ["000000","000033","000066","000099","0000CC","0000FF","003300","003333","003366","003399","0033CC","0033FF","006600","006633","006666","006699","0066CC","0066FF","009900","009933","009966","009999","0099CC","0099FF","00CC00","00CC33","00CC66","00CC99","00CCCC","00CCFF","00FF00","00FF33","00FF66","00FF99","00FFCC","00FFFF","330000","330033","330066","330099","3300CC","3300FF","333300","333333","333366","333399","3333CC","3333FF","336600","336633","336666","336699","3366CC","3366FF","339900","339933","339966","339999","3399CC","3399FF","33CC00","33CC33","33CC66","33CC99","33CCCC","33CCFF","33FF00","33FF33","33FF66","33FF99","33FFCC","33FFFF","660000","660033","660066","660099","6600CC","6600FF","663300","663333","663366","663399","6633CC","6633FF","666600","666633","666666","666699","6666CC","6666FF","669900","669933","669966","669999","6699CC","6699FF","66CC00","66CC33","66CC66","66CC99","66CCCC","66CCFF","66FF00","66FF33","66FF66","66FF99","66FFCC","66FFFF","990000","990033","990066","990099","9900CC","9900FF","993300","993333","993366","993399","9933CC","9933FF","996600","996633","996666","996699","9966CC","9966FF","999900","999933","999966","999999","9999CC","9999FF","99CC00","99CC33","99CC66","99CC99","99CCCC","99CCFF","99FF00","99FF33","99FF66","99FF99","99FFCC","99FFFF","CC0000","CC0033","CC0066","CC0099","CC00CC","CC00FF","CC3300","CC3333","CC3366","CC3399","CC33CC","CC33FF","CC6600","CC6633","CC6666","CC6699","CC66CC","CC66FF","CC9900","CC9933","CC9966","CC9999","CC99CC","CC99FF","CCCC00","CCCC33","CCCC66","CCCC99","CCCCCC","CCCCFF","CCFF00","CCFF33","CCFF66","CCFF99","CCFFCC","CCFFFF","FF0000","FF0033","FF0066","FF0099","FF00CC","FF00FF","FF3300","FF3333","FF3366","FF3399","FF33CC","FF33FF","FF6600","FF6633","FF6666","FF6699","FF66CC","FF66FF","FF9900","FF9933","FF9966","FF9999","FF99CC","FF99FF","FFCC00","FFCC33","FFCC66","FFCC99","FFCCCC","FFCCFF","FFFF00","FFFF33","FFFF66","FFFF99","FFFFCC","FFFFFF"].sort((a,b) => Math.floor(rng()*2) == 1 ? -1 : 0 );
 let safe_colour_index = 0;
 let graph_algorithm = "r2r";
 let animate;
@@ -95,7 +165,7 @@ function gen_num(nmax,nmin=min_num) {
 	nmax = nmin;
 	nmin = tmp;
     }
-    return(Math.floor((Math.random() * (nmax-nmin+1)) + nmin));
+    return(Math.floor((rng() * (nmax-nmin+1)) + nmin));
 }
 function gen_colour(type=2,alpha=0.9) {
     const red = gen_num(255);
@@ -162,8 +232,8 @@ function add_node_at_pos(gr,name,xpos,ypos,shape=node_shape,sz=node_size,cols=co
 }
 function add_node_at_random_pos(gr,name,sc=scat,os=offs) {
     add_node_at_pos(gr,name,
-		    Math.random()*sc.x+os.x,
-		    Math.random()*sc.y+os.y);
+		    rng()*sc.x+os.x,
+		    rng()*sc.y+os.y);
 }
 function add_nodes_at_same_pos(gr,names,posx=0,posy=0) {
     const len = names.length;
@@ -172,7 +242,7 @@ function add_nodes_at_same_pos(gr,names,posx=0,posy=0) {
 }
 function scatter_nodes(gr,sc=scat,os=offs) {
     for(let a_key in gr.ns)
-	gr.reposition_node(a_key,Math.random()*sc.x+os.x,Math.random()*sc.y+os.y);
+	gr.reposition_node(a_key,rng()*sc.x+os.x,rng()*sc.y+os.y);
 }
 function hline_nodes(gr,jit=jitter,os=offs,c=canv) {
     const len = Object.keys(gr.ns).length;
@@ -397,8 +467,8 @@ function make_r2r_graph(nuno,nued) {
     const theoretical_max = full_connect_nu(nuno);
     const max_num = (nued <= theoretical_max) ? nued : theoretical_max;
     while(gr.nu_edges/2 < max_num) {
-	let n1 = Math.floor(Math.random()*nuno);
-	let n2 = Math.floor(Math.random()*nuno);
+	let n1 = Math.floor(rng()*nuno);
+	let n2 = Math.floor(rng()*nuno);
 	gr.add_edge(n1,n2);
     }
     return(gr);
@@ -408,8 +478,8 @@ function make_r2r_all_graph(nuno,nued_id="nu_edges") {
     add_nodes(gr,nuno);
     let ne = 0;
     for(let i = 0;i<nuno || Graph.discover_node_groups(gr,false).length > 1;++i) {
-	let n1 = Math.floor(Math.random()*nuno);
-	let n2 = Math.floor(Math.random()*nuno);
+	let n1 = Math.floor(rng()*nuno);
+	let n2 = Math.floor(rng()*nuno);
 	if (gr.add_edge(n1,n2))
 	    ++ne;
     }
@@ -431,7 +501,7 @@ function make_s2r_graph(nuno,nued) {
 	const n1 = n;
 	let n2 = n1
 	while (n2 == n1)
-	    n2 = Math.floor(Math.random()*nuno);
+	    n2 = Math.floor(rng()*nuno);
 	gr.add_edge(n1,n2);
     }
     return(gr);
@@ -442,7 +512,7 @@ function make_s2r_all_graph(nuno,nued_id="nu_edges") {
     let i = 0;
     let ne = 0;
     while(Graph.discover_node_groups(gr,false).length > 1) {
-	let n2 = Math.floor(Math.random()*nuno);
+	let n2 = Math.floor(rng()*nuno);
 	if (gr.add_edge(i++,n2))
 	    ++ne;
 	if (i == nuno)

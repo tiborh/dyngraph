@@ -5,6 +5,7 @@
         <meta content="utf-8" http-equiv="encoding">
 	<link rel="shortcut icon" type="image/jpg" href="img/favicon.ico"/>
         <title>Dynamic graph</title>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/seedrandom/3.0.5/seedrandom.min.js"></script>
         <script type="text/javascript" src="js/main.js"></script>
         <script type="text/javascript" src="js/node.js"></script>
         <script type="text/javascript" src="js/graph.js"></script>
@@ -229,6 +230,10 @@
 	    <tr>
 	      <td class="button1" title="number of branches a node can have apart from the incoming one"><label>branches</label></td>
 	      <td><input id="nu_branches" type="number" min="1" max="10" disabled></td>
+	    </tr>
+	    <tr>
+	      <td><label>seed</label></td>
+	      <td><input title="Seed for random number generation (leave empty for unseeded)" id="txt_seed" type="text" placeholder="(empty for unseeded)" /><input type="button" value="Apply" onClick="set_seed(document.getElementById('txt_seed').value);alert('Seed set. Re-generate the graph for effect.');"></td>
 	    </tr>
 	    <tr>
 	      <td><label>scatter</label></td>
@@ -955,31 +960,65 @@
 	const freader = new FileReader();
 	freader.onload = function( ev ) {
 	    const contents = JSON.parse( decodeURIComponent( ev.target.result ) );
-	    //console.log(contents);
 	    infn.value = "";
-	    for(let a_key in inp_vals) {
-		inp_vals[a_key] = Number(contents.inp_vals[a_key]);
-		inp_vals_map[a_key].value = Number(contents.inp_vals[a_key]);
+	    
+	    // Handle versioned configs (1.0+) with validation
+	    const config_version = contents.version || "0.9";
+	    if (contents.export_date) {
+		console.log("Loading config from: " + new Date(contents.export_date).toLocaleString());
 	    }
-	    load_cols(contents.colours);
+	    
+	    for(let a_key in inp_vals) {
+		if (contents.inp_vals && contents.inp_vals[a_key] !== undefined) {
+		    inp_vals[a_key] = Number(contents.inp_vals[a_key]);
+		    inp_vals_map[a_key].value = Number(contents.inp_vals[a_key]);
+		}
+	    }
+	    if (contents.colours) {
+		load_cols(contents.colours);
+	    }
 	    for(let a_key in node_params) {
-		node_params[a_key] = Number(contents.node_params[a_key]);
-		map_node_params[a_key][0].value = Number(contents.node_params[a_key]);
+		if (contents.node_params && contents.node_params[a_key] !== undefined) {
+		    node_params[a_key] = Number(contents.node_params[a_key]);
+		    map_node_params[a_key][0].value = Number(contents.node_params[a_key]);
+		}
 	    }
 	    for(let a_key in node_size) {
-		node_size[a_key] = Number(contents.node_size[a_key]);
+		if (contents.node_size && contents.node_size[a_key] !== undefined) {
+		    node_size[a_key] = Number(contents.node_size[a_key]);
+		}
 	    }
-	    node_shape = contents.node_shape;
-	    sync_back_shape_selection("sel_shape");
-	    sel_graphalg.selectedIndex = contents.graphalg_index;
-	    sel_graphalg.dispatchEvent(new Event("change"));
-	    sel_nodeplace.selectedIndex = contents.nodeplace_index;
-	    sel_label_align.selectedIndex = contents.labelalign_index;
-	    sel_label_baseline.selectedIndex = contents.labelbaseline_index;
-	    tracer.checked = contents.tracing;
-	    tracer.dispatchEvent(new Event("change"));
-	    labelling.checked = contents.labelling;
-	    labelling.dispatchEvent(new Event("change"));
+	    if (contents.node_shape) {
+		node_shape = contents.node_shape;
+		sync_back_shape_selection("sel_shape");
+	    }
+	    if (contents.graphalg_index !== undefined) {
+		sel_graphalg.selectedIndex = contents.graphalg_index;
+		sel_graphalg.dispatchEvent(new Event("change"));
+	    }
+	    if (contents.nodeplace_index !== undefined) {
+		sel_nodeplace.selectedIndex = contents.nodeplace_index;
+	    }
+	    if (contents.labelalign_index !== undefined) {
+		sel_label_align.selectedIndex = contents.labelalign_index;
+	    }
+	    if (contents.labelbaseline_index !== undefined) {
+		sel_label_baseline.selectedIndex = contents.labelbaseline_index;
+	    }
+	    if (contents.tracing !== undefined) {
+		tracer.checked = contents.tracing;
+		tracer.dispatchEvent(new Event("change"));
+	    }
+	    if (contents.labelling !== undefined) {
+		labelling.checked = contents.labelling;
+		labelling.dispatchEvent(new Event("change"));
+	    }
+	    // Load group styles if present
+	    if (contents.group_styles) {
+		for (let group_name in contents.group_styles) {
+		    add_group(group_name, contents.group_styles[group_name]);
+		}
+	    }
 	    config();
 	    restart();
 	    sel_label_align.dispatchEvent(new Event("change"));
@@ -1016,6 +1055,9 @@
 	    let hiddenElement = document.createElement('a');
 	    const out_val = {};
 	    save_to_inp_vals();
+	    // Add version info for future compatibility
+	    out_val.version = "1.0";
+	    out_val.export_date = new Date().toISOString();
 	    out_val.inp_vals = {};
 	    for(let a_key in inp_vals)
 		out_val.inp_vals[a_key] = Number(inp_vals[a_key]);
@@ -1033,10 +1075,12 @@
 	    out_val.nodeplace_index = sel_nodeplace.selectedIndex;
 	    out_val.labelalign_index = sel_label_align.selectedIndex;
 	    out_val.labelbaseline_index = sel_label_baseline.selectedIndex;
+	    // Export group styles if any exist
+	    out_val.group_styles = group_styles;
 	    
-	    hiddenElement.href = 'data:attachment/text,' + encodeURIComponent(JSON.stringify(out_val));
+	    hiddenElement.href = 'data:attachment/text,' + encodeURIComponent(JSON.stringify(out_val, null, 2));
 	    hiddenElement.target = '_blank';
-	    hiddenElement.download = fn;
+	    hiddenElement.download = fn + '.json';
 	    hiddenElement.click();
 	}
 	function add_table_rows(tbl,row_data) {
