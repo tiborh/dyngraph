@@ -157,7 +157,7 @@ function sync_back_shape_selection(sel_id) {
 	else
 	    sels[seli].selected = false;
     }
-    sels.dispatchEvent(new Event('change'));
+    sels.dispatchEvent(new Event('change',{bubbles:true}));
 }
 function gen_num(nmax,nmin=min_num) {
     if (nmax < nmin) {

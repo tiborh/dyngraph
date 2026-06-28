@@ -1,1 +1,1233 @@
-dyngraph.html
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+        <meta content="utf-8" http-equiv="encoding">
+	<link rel="shortcut icon" type="image/jpg" href="img/favicon.ico"/>
+        <title>Dynamic graph</title>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/seedrandom/3.0.5/seedrandom.min.js"></script>
+        <script type="text/javascript" src="js/main.js"></script>
+        <script type="text/javascript" src="js/node.js"></script>
+        <script type="text/javascript" src="js/graph.js"></script>
+	<script type="text/javascript" src="js/paths.js"></script>
+	<script type="text/javascript">
+	  function init() {
+	      setup_inp_vals_map();
+	      init_starting_colour_selector();
+	      document.getElementById("sel_starting_safe_colour").dispatchEvent(new Event("change",{bubbles:true}));
+	  }
+	  function post_init() {
+	      init_connectedness_selectors();
+	  }
+	  function config() {
+	      fill_in_colours();
+	      tracer.dispatchEvent(new Event('change',{bubbles:true}));
+	      labelling.dispatchEvent(new Event('change',{bubbles:true}));
+	      document.getElementById("sel_shape").dispatchEvent(new Event("change",{bubbles:true}));
+	      update_inp_vals();
+	      update_node_params();
+	  }
+	  function fill_in_colours() {
+	      for (let it in col_sels)
+	       	  col_sels[it].value = colours[it];
+	  }
+	  function remove_unconnected(quot=elem.quote,delim=elem.delim,endl=elem.endl) {
+	      const edge_list = get_edge_list();
+	      let output_string = "";
+	      for(let i in edge_list) {
+		  output_string += quot + edge_list[i][0] + quot + delim + quot + edge_list[i][1] + quot + endl;
+	      }
+	      area_edgelist.value = output_string;
+	  }
+	  function set_scenario(scen,node_id="nu_nodes",node_id2="nu_nodes2",edge_id="nu_edges",brch_id="nu_branches") {
+	      //     nodes,  nodes2,edges, branch
+	      //       0       1      2      3
+	      const scen_map = {
+		  0: [true,  false, true,  false],
+		  1: [true,  false, false, true ],
+		  2: [true,  false, false, false],
+		  3: [false, false, false, false],
+		  4: [true,  true,  false, false],
+	      };
+	      const params = {
+		  0: document.getElementById(node_id),
+		  1: document.getElementById(node_id2),
+		  2: document.getElementById(edge_id),
+		  3: document.getElementById(brch_id)
+	      };
+	      for( let a_key of Object.keys(params))
+	       	  params[a_key].disabled = !scen_map[scen][a_key];
+	  }
+	  function proc_sel_graphalg(sel_graphalg) {
+	      const seli = sel_graphalg[sel_graphalg.selectedIndex].value;
+	      // console.log("alg selected: " + seli);
+	      switch (seli) {
+	      case "r2r":
+	      case "s2r":
+		  set_scenario(0);
+		  break;
+	      case "tree":
+	      case "r2ra":
+	      case "s2ra":
+		  set_scenario(1);
+		  break;
+	      case "a2a":
+	      case "circ":
+	      case "centr":
+	      case "line":
+	      case "ladd":
+	      case "tri":
+		  set_scenario(2);
+		  break;
+	      case "same":
+	      case "el":
+		  set_scenario(3);
+		  break;
+	      case "matr":
+		  set_scenario(4);
+		  break;
+	      default:
+		  console.log("Unhandled selection");
+	      }
+	      set_graph_alg(seli);
+	  }
+	  function resize_canvas(w,h) {
+	      //console.log("received:"+w+h);
+	      canv.width = w;
+	      canv.height = h;
+	      update_scatter(inp_vals_map.nu_scatter.value);
+	  }
+	</script>
+	<style type="text/css">
+	  body {
+	      font-family: helvetica,arial,sans-serif;
+	  }
+	  h1 {
+	      text-align: center;
+	  }
+	  /* Responsive font sizing preserved for small screens using clamp() */
+	  label {
+	      font-size: clamp(0.9rem, 1.5vw, 1.3rem);
+	      vertical-align: middle;
+	  }
+	  input, button, select {
+	      font-size: clamp(0.85rem, 1vw, 1.1rem);
+	      vertical-align: middle;
+	  }
+	  input.cb {
+	      width: clamp(1.6rem, 1.8vw, 2.2rem);
+	      height: clamp(1.6rem, 1.8vh, 2.2rem);
+	  }
+	  input.rb {
+	      width: clamp(1.9rem, 2.25vw, 2.6rem);
+	      height: clamp(1.9rem, 2.25vh, 2.6rem);
+	  }
+	  /* Disabled elements: dim and prevent pointer events to avoid nested-label click issues */
+	  input[disabled], select[disabled], button[disabled] {
+	      opacity: 0.6;
+	      pointer-events: none;
+	  }
+	  .column {
+	      float: left;
+	      padding: 1vw;
+	  }
+	  .top {
+	      margin-left: auto;
+	      margin-right: auto;
+	      vertical-align: middle;
+	  }
+	  .centred {
+	      margin-left: auto;
+	      margin-right: auto;
+	      text-align: center;
+	  }
+	  .right {
+	      margin-left: auto;
+	      margin-right: auto;
+	      text-align: right;
+	  }
+	  .button1 {
+	      width: 11rem;
+	  }
+	  .button2 {
+	      width: 100%;
+	  }
+	  #canvas_space {}
+	  #panel_space {}
+	  body {
+	      background: #27221F; /* 墨色 「すみいろ」*/
+	      /* color: #EBF6F7;      /\* 藍白 「あいじろ」*\/ */
+	      color: #FFDDCA;      /* 白練 「しろねり」*/
+	  }
+	  canvas {
+	      background: #171412; /* 黒色 「こくしょく」*/
+	      /* background: #181B26; /\* 褐色 「かちいろ」*\/ */
+	      padding: 0;
+	      margin: 0 auto;
+	      margin-bottom: 1rem;
+	      display: block;
+	  }
+	  td {
+	      /* text-align: center; */
+	      vertical-align: middle;
+	  }
+	  .slider {
+	      -webkit-appearance: none;
+	      width: 100%;
+	      height: 1px;
+	      border-radius: 5px;
+	      background: #171412;
+	      outline: none;
+	      opacity: 0.7;
+	      -webkit-transition: .2s;
+	      transition: opacity .2s;
+	  }
+	  .slider::-webkit-slider-thumb {
+	      -webkit-appearance: none;
+	      appearance: none;
+	      width: 20px;
+	      height: 20px;
+	      border-radius: 50%; 
+	      background: #2A603B;
+	      cursor: pointer;
+	  }
+	  .slider::-moz-range-thumb {
+	      width: 18px;
+	      height: 18px;
+	      border-radius: 50%;
+	      background: #2A603B;
+	      cursor: pointer;
+	  }
+	</style>
+    </head>
+    <body onload="init();config();restart();">
+      <div id="main_container">
+        <div class="column" id="panel_space">
+	  <table id="tbl_shape">
+	    <tr>
+	      <td class="button1"><label>canvas</label></td>
+	      <td><input title="width of the canvas (in screen pixels)" id="sz_canvas_w" type="number" min="100" max="8192" /><input title="height of the canvas (in screen pixels)" id="sz_canvas_h" type="number" min="100" max="8192" disabled><input title="width/height lock" id="cb_canv_dim_lock" class="cb" type="checkbox" checked></td>
+	    </tr>
+	    <tr>
+	      <td><label>edges</label></td>
+	      <td><input title="number of edges in the graph" id="nu_edges" type="number" min="1" max="1000" /></td>
+	    </tr>
+	    <tr>
+	      <td><label>line width</label></td>
+	      <td><input title="line width of edges and node outlines" id="wd_line" type="number" min="1" max="32" /></td>
+	    </tr>
+	    <tr>
+	      <td><label>nodes</label></td>
+	      <td><input title="number of nodes" id="nu_nodes" type="number" min="2" max="1000" /><label>x</label><input id="nu_nodes2" type="number" min="1" max="100" value="1" disabled></td>
+	    </tr>
+	    <tr>
+	      <td><label>shape</label></td>
+	      <td><select class="button1" title="the shape of the nodes" id="sel_shape" onchange="proc_shape_sel('sel_shape','node_dim_target')">
+		  <option value="c" selected>circle</option>
+		  <option value="s">square</option>
+		  <option value="e">ellipse</option>
+		  <option value="r">rectangle</option>
+		</select></td>
+	    </tr>
+	  </table>
+	  <div id="node_dim_target">
+	  </div>
+	  <table id="tbl_graph">
+	    <tr>
+	      <td class="button1" title="number of branches a node can have apart from the incoming one"><label>branches</label></td>
+	      <td><input id="nu_branches" type="number" min="1" max="10" disabled></td>
+	    </tr>
+	    <tr>
+	      <td><label>seed</label></td>
+	      <td><input title="Seed for random number generation (leave empty for unseeded)" id="txt_seed" type="text" placeholder="(empty for unseeded)" /><input type="button" value="Apply" onClick="set_seed(document.getElementById('txt_seed').value);alert('Seed set. Re-generate the graph for effect.');"></td>
+	    </tr>
+	    <tr>
+	      <td><label>scatter</label></td>
+	      <td><input title="initial scattering of the nodes" id="nu_scatter" type="number" min="1" max="100" /><label>%</label></td>
+	    </tr>
+	    <tr>
+	      <td><label>alpha</label></td>
+	      <td><input title="transparency" id="nu_alpha" type="number" min="10" max="100" /><label>%</label></td>
+	    </tr>
+	    <tr>
+	      <td class="button1"><label>font size</label></td>
+	      <td><input title="font size (in screen pixels)" id="sz_font" type="number" min="8" max="48" /></td>
+	    </tr>
+	    <tr>
+	      <td colspan="2">
+		<table id="tbl_col_select">
+		  <tr>
+		    <th class="button1"></th>
+		    <th>colour</th>
+		    <th>random</th>
+		    <th>off</th>
+		  </tr>
+		  <tr>
+		    <td><label>background</label></td>
+		    <td class="centred"><input id="back_colour" type="color" /></td>
+		    <td class="centred"><input id="rnd_back_colour" class="cb" type="checkbox" hidden></td>
+		    <td class="centred"><input id="back_colour_off" class="cb" type="checkbox"></td>
+		  </tr>
+		  <tr>
+		    <td><label>fill</label></td>
+		    <td class="centred"><input id="fill_colour" type="color" /></td>
+		    <td class="centred"><input id="rnd_fill_colour" class="cb" type="checkbox" /></td>
+		    <td class="centred"><input id="fill_colour_off" class="cb" type="checkbox" /></td>
+		  </tr>
+		  <tr>
+		    <td><label>font</label></td>
+		    <td class="centred"><input id="font_colour" type="color" /></td>
+		    <td class="centred"><input id="rnd_font_colour" class="cb" type="checkbox" /></td>
+		    <td class="centred"><input id="font_colour_off" class="cb" type="checkbox" /></td>
+		  </tr>
+		  <tr>
+		    <td><label>outline</label></td>
+		    <td class="centred"><input id="outline_col" type="color" /></td>
+		    <td class="centred"><input id="rnd_outline_col" class="cb" type="checkbox" /></td>
+		    <td class="centred"><input id="outline_col_off" class="cb" type="checkbox" /></td>
+		  </tr>
+		  <tr>
+		    <td><label>line</label></td>
+		    <td class="centred"><input id="line_colour" type="color" /></td>
+		    <td class="centred"><input id="rnd_line_colour" class="cb" type="checkbox" /></td>
+		    <td class="centred"><input id="line_colour_off" class="cb" type="checkbox" /></td>
+		  </tr>
+		  <tr>
+		    <td><label>trace fill</label></td>
+		    <td class="centred"><input id="trc_fil_col" type="color" /></td>
+		    <td class="centred"><input id="rnd_trc_fil_col" class="cb" type="checkbox" /></td>
+		    <td class="centred"><input id="trc_fil_col_off" class="cb" type="checkbox" hidden></td>
+		  </tr>
+		  <tr>
+		    <td><label>trace outl.</label></td>
+		    <td class="centred"><input id="trc_oli_col" type="color" /></td>
+		    <td class="centred"><input id="rnd_trc_oli_col" class="cb" type="checkbox" /></td>
+		    <td class="centred"><input id="trc_oli_col_off" class="cb" type="checkbox" hidden></td>
+		  </tr>
+		  <tr>
+		    <td><label>trace line</label></td>
+		    <td class="centred"><input id="trc_lin_col" type="color" /></td>
+		    <td class="centred"><input id="rnd_trc_lin_col" class="cb" type="checkbox"></td>
+		    <td class="centred"><input id="trc_lin_col_off" class="cb" type="checkbox" hidden></td>
+		  </tr>
+		</table>
+	      </td>
+	    </tr>
+	    <tr>
+	      <td><table>
+		  <tr>
+		    <td><label title="Ctrl+Alt+T">Tracing</label></td>
+		    <td><input id="cb_tracing" class="cb" type="checkbox" checked></td>
+		  </tr>
+		  <tr>
+		    <td><label title="Ctrl+Alt+L">Labels</label></td>
+		    <td><input id="cb_labels" class="cb" type="checkbox"></td>
+		  </tr>
+		  <tr title="Restart in paused status?">
+		    <td><label label="Paused (Re)Start">PStart</label></td>
+		    <td><input id="cb_paused_start" class="cb" type="checkbox"></td>
+		  </tr>
+	      </table></td>
+	      <td><table>
+		  <tr><td><input type="button" title="Ctrl+Alt+R" class="button1" id="btn_refresh_colours" onClick="refresh_colours();" value="Refresh Colours" /></td></tr>
+		  <tr><td><input type="button" title="pause or resume animation (Pause/Break on keyboard)" class="button1" id="btn_pause_conti" value="Pause" /></td></tr>
+		  <tr><td><input type="button" title="restart animation (Ctrl+Alt+Enter)" class="button1" id="btn_start" onClick="restart()" value="Restart" /></td></tr>
+	      </table></td>
+	    </tr>
+	    <tr>
+	      <td><label>Label Align</label></td>
+	      <td><select class="button2" id="sel_label_align">
+		  <option value="start" selected>start</option>
+		  <option value="end">end</option>
+		  <option value="left">left</option>
+		  <option value="right">right</option>
+		  <option value="center">centre</option>
+	      </select></td>
+	    </tr>
+	    <tr>
+	      <td><label>Label Basel.</label></td>
+	      <td><select class="button2" id="sel_label_baseline">
+		  <option value="top" selected>top</option>
+		  <option value="hanging">hanging</option>
+		  <option value="middle">middle</option>
+		  <option value="alphabetic">alphabetic</option>
+		  <option value="ideographic">ideographic</option>
+		  <option value="bottom">bottom</option>
+	      </select></td>
+	    </tr>
+	    <tr>
+	      <td><label>Output file</label></td>
+	      <td><label><input type="text" class="button1" id="out_fn" value="settings.json" /></label></td>
+	    </tr>
+	    <tr>
+	      <td><input type="button" title="Ctrl+Alt+C" class="button1" id="btn_clear" onClick="clear_canvas();" value="Clear Canvas" /></td>
+	      <td><input type="button" class="button1" id="btn_store" onClick="save_settings('out_fn');" value="Save Settings" /></td>
+	    </tr>
+	    <!-- <tr> -->
+	      <!-- <tr><td><label style="visibility: hidden;">placeholder</label></td></tr> -->
+	    <!-- <tr><td><label style="visibility: hidden;">placeholder</label></td></tr> -->
+	    <!-- </tr> -->
+	    <tr>
+	      <td colspan="2"><input title="select settings file to load" type="file" id="infilename"></td>
+	    </tr>
+	    <tr><td colspan="2" class="centred"><label>Misc Parameters</label></td></tr>
+	    <tr>
+	      <td colspan="2">
+		<table>
+		  <tr>
+		    <td>Max Link Threshold</td>
+		    <td><input type="range" min="0" max="200" step="10" class="slider" id="slider_link_max_length")></td>
+		    <td class="right"><span id="span_link_max_length"></span></td>
+		  </tr>
+		  <tr>
+		    <td>Min Link Threshold</td>
+		    <td><input type="range" min="0" max="200" step="10" class="slider" id="slider_link_min_length")></td>
+		    <td class="right"><span id="span_link_min_length"></span></td>
+		  </tr>
+		  <tr>
+		    <td>Distance Modifier</td>
+		    <td><input type="range" min="0" max="600" step="10" class="slider" id="slider_dist_modifier")></td>
+		    <td class="right"><span id="span_dist_modifier"></span></td>
+		  </tr>
+		  <tr>
+		    <td>Large Distance Divisor</td>
+		    <td><input type="range" min="0" max="200" step="10" class="slider" id="slider_large_dist_div")></td>
+		    <td class="right"><span id="span_large_dist_div"></span></td>
+		  </tr>
+		  <tr>
+		    <td>Small Distance Divisor</td>
+		    <td><input type="range" min="0" max="200" step="10" class="slider" id="slider_small_dist_div")></td>
+		    <td class="right"><span id="span_small_dist_div"></span></td>
+		  </tr>
+		  <tr>
+		    <td>Distance Threshold</td>
+		    <td><input type="range" min="0" max="300" step="10" class="slider" id="slider_dist_threshold")></td>
+		    <td class="right"><span id="span_dist_threshold"></span></td>
+		  </tr>
+		  <tr>
+		    <td>fx Multiplier</td>
+		    <td><input type="range" min="0" max="10" step="1" class="slider" id="slider_fx_multip")></td>
+		    <td class="right"><span id="span_fx_multip"></span></td>
+		  </tr>
+		  <tr>
+		    <td>fy Multiplier</td>
+		    <td><input type="range" min="0" max="10" step="1" class="slider" id="slider_fy_multip")></td>
+		    <td class="right"><span id="span_fy_multip"></span></td>
+		  </tr>
+		  <tr>
+		    <td>Nudge size</td>
+		    <td><input type="range" min="1" max="20" step="1" class="slider" id="slider_nudge_size")></td>
+		    <td class="right"><span id="span_nudge_size"></span></td>
+		  </tr>
+		  <tr>
+		    <td>Label Offset (x)</td>
+		    <td><input type="range" min="-100" max="100" step="1" class="slider" id="slider_label_offset_x")></td>
+		    <td class="right"><span id="span_label_offset_x"></span></td>
+		  </tr>
+		  <tr>
+		    <td>Label Offset (y)</td>
+		    <td><input type="range" min="-100" max="100" step="1" class="slider" id="slider_label_offset_y")></td>
+		    <td class="right"><span id="span_label_offset_y"></span></td>
+		  </tr>
+		  <tr>
+		    <td>Animation Timeout</td>
+		    <td><input type="range" min="0" max="100" step="1" class="slider" id="slider_anim_timeout")></td>
+		    <td class="right"><span id="span_anim_timeout"></span></td>
+		  </tr>
+		</table>
+	      </td>
+	    </tr>
+	    <tr><td colspan="2" class="centred"><label>How to build graph?</label></td></tr>
+	    <tr>
+	      <td colspan="2"><select class="button2" id="sel_graphalg">
+		  <option value="r2r" selected>Random:Random</option>
+		  <option value="r2ra">Rand:Rand Till All</option>
+		  <option value="s2r">Serial:Random</option>
+		  <option value="s2ra">Serial:Rand Till All</option>
+		  <option value="a2a">All:All</option>
+		  <option value="centr">Central</option>
+		  <option value="circ">Circular</option>
+		  <option value="matr">Matrix</option>
+		  <option value="same">Same Graph</option>
+		  <option value="tree">Tree</option>
+		  <option value="tri">Triangulated</option>
+		  <option value="el">from Edge List</option>
+	      </select></td>
+	    </tr>
+	    <tr><td colspan="2" class="centred"><label>Initial node placement</label></td></tr>
+	    <tr>
+	      <td colspan="2"><select class="button2" id="sel_nodeplace">
+		  <option value="scatter" selected>Random Scatter</option>
+		  <option value="hline">Horizontal Line</option>
+		  <option value="vline">Vertical Line</option>
+		  <option value="lrdiagonal">Diagonal</option>
+		  <option value="x">X-shaped</option>
+		  <option value="o">Circular</option>
+		  <option value="grid">Grid</option>
+	      </select></td>
+	    </tr>
+	    <tr><td colspan="2" class="centred"><label>Edge List</label></td></tr>
+	    <tr>
+	      <td><input type="button" class="button1" title="Ctrl+Alt+P" id="btn_print" onClick="print_edges(area_edgelist);" value="Print Edges" /></td>
+	      <td><input type="button" class="button1" title="Alt+Delete" id="btn_rm_lone" onClick="remove_unconnected();" value="Del Lone Nodes" /></td>
+	    </tr>
+	    <tr>
+	      <td colspan="2" class="centred"><textarea id="edge_list" rows="10" cols="41"></textarea>
+	    </tr>
+	    <tr><td colspan="2" class="centred"><label>CSV I/O</label></td></tr>
+	    <tr>
+	      <td colspan="2"><input type="file" id="file_csv_in" onChange="read_image(this,'edge_list')"></td>
+	    </tr>
+	    <tr>
+	      <td colspan="2"><input type="button" id="btn_save_as_csv" value="Save as csv" onclick="save_as_csv('edge_list','inp_csv_fn');"> <input type="text" id="inp_csv_fn" value="edgelist.csv" /></td>
+	    </tr>
+	    <tr><td colspan="2" class="centred"><label><a name="sedge">Sedgewick I/O</a></label></td></tr>
+	    <tr>
+	      <td colspan="2"><input type="file" id="file_sedge_in" onChange="read_image2(this,'nu_nodes','nu_edges')"></td>
+	    </tr>
+	    <tr>
+	      <td colspan="2"><input type="button" id="btn_save_as_sedge" value="Save as" onclick="save_as_sedge('inp_sedge_fn');"> <input type="text" id="inp_sedge_fn" value="sedge_out.txt" /></td>
+	    </tr>
+	  </table>
+	</div>
+	<div class="column" id="canvas_space">
+	  <table>
+	    <tr>
+	      <td colspan="2"><input type="button" id="btn_save_as_img" value="Save as image" onclick="download_as_image('inp_img_fn');"> <input type="text" id="inp_img_fn" value="dyngraph.png" /></td>
+	    </tr>
+	    <tr>
+	      <td rowspan="4">
+		<canvas id="cv_canv" title="click: pause/continue; double-click: clear" onclick="pause_or_continue(btn_pause_conti,btn_start)" ondblclick="clear_canvas()"></canvas>
+	      </td>
+	      <td><input type="button" title="うえ (Ctrl+Shift+UpArrow)" id="btn_up" onClick="nudge('up');" value="上" /></td>
+	    </tr>
+	    <tr>
+	      <td><input type="button" title="ひだり (Ctrl+Shift+LeftArrow)" id="btn_left" onClick="nudge('left');" value="左" /></td>
+	    </tr>
+	    <tr>
+	      <td><input type="button" title="みぎ (Ctrl+Shift+RightArrow)" id="btn_right" onClick="nudge('right');" value="右" /></td>
+	    </tr>
+	    <tr>
+	      <td><input type="button" title="した (Ctrl+Shift+DownArrow)" id="btn_down" onClick="nudge('down');" value="下" /></td>
+	    </tr>
+	    <tr>
+	      <td><label><input type="button" id="btn_discover_groups" onClick="reset_safe_colour_index();Graph.discover_node_groups(g);" value="Colour Groups" /> or <input type="button" id="btn_connect_groups" onClick="reset_safe_colour_index();Graph.connect_node_groups(g,'cb_rnd_conn_grps');sync_nu_edges();" value="Connect Groups" /> (rand:<input type="checkbox" class="cb" id="cb_rnd_conn_grps" checked>) starting with colour </label><select class="button1" id="sel_starting_safe_colour"></select></td>
+	      <td></td>
+	    </tr>
+	    <tr>
+	      <td><label>Edge between <select id="sel_node_list1"></select> and <select id="sel_node_list2"></select>? <span id="sp_is_connected"></span> <input type="button" id="btn_hilite_sel_nodes" value="highlight"  onclick="hilite_selected_nodes();"/> <input type="button" id="btn_connect_sel_nodes" value="connect"  onclick="connect_selected_nodes();"/> <input type="button" id="btn_disconnect_sel_nodes" value="disconnect"  onclick="disconnect_selected_nodes();"/> <input type="button" onclick="rem_node('sel_node_list1')" value="Remove first" /> <input type="button" onclick="rem_node('sel_node_list2')" value="Remove second" /></label></td>
+	      <td></td>
+	    </tr>
+	    <tr>
+	      <td><label>Route between the two? <input type="button" id="btn_route" value="Examine" onclick="examine_routes_between();"/> <span id="sp_is_route_between"></span></label></td>
+	      <td></td>
+	    </tr>
+	    <tr>
+	      <td><label>Path between the two? <input type="button" id="btn_path_btw" value="Examine" onclick="hilight_path_between();"/> <span id="sp_is_path_btw"></span> <input type="button" value="Rem Path" onclick="g.path=[];"/></label></td>
+	      <td></td>
+	    </tr>
+	    <tr>
+	      <td><label>Add node with name <input type="text" id="inp_new_node_name" onchange="add_new_node(this,'cb_hilite_added')" size="10" /> (highlight: <input type="checkbox" class="cb" id="cb_hilite_added" checked>)</label></td>
+	      <td></td>
+	    </tr>
+	    <tr>
+	      <td><label>Find node with name <input type="text" id="inp_find_node_name" onchange="find_node(this,'sp_found_node')" size="10" /><span id="sp_found_node"></span></label></td>
+	      <td></td>
+	    </tr>
+	  </table>
+	</div>
+      </div>
+      <script type="text/javascript">
+	const canv = document.getElementById("cv_canv")
+	const c2d = canv.getContext("2d");
+	const inp_vals = {
+	    sz_canvas_w:  1000,
+	    sz_canvas_h:  1000,
+	    sz_font:      12, 
+	    nu_nodes:    100,
+	    nu_nodes2:     1,
+	    nu_edges:    100,
+	    wd_line:       1,
+	    nu_branches:   2,
+	    nu_scatter:   80,
+	    nu_alpha:     90,
+	}
+	function name_from_selbox(selbox) {
+	    return(selbox[selbox.selectedIndex].value);
+	}
+	function name_from_selbox_id(selbox_id) {
+	    return(name_from_selbox(document.getElementById(selbox_id)));
+	}
+	function adj_index_from_selbox(selbox,gr=g) {
+	    return(gr.sn[name_from_selbox(selbox)]);
+	}
+	function adj_index_from_selbox_id(selbox_id,gr=g) {
+	    return(adj_index_from_selbox(document.getElementById(selbox_id),gr));
+	}
+	function print_edges(target,gr=g,delim=elem.delim,quot=elem.quote) {
+	    target.value = g.get_edge_list(delim,quot);
+	}
+	function colour_from_selbox_id(selbox_id) {
+	    const name = name_from_selbox_id(selbox_id);
+	    return('#' + name);
+	}
+	function add_new_node(name_box,hi_id,sel_shape_id="sel_shape",col_sel_id="sel_starting_safe_colour",gr=g) {
+	    const sel_shape = document.getElementById(sel_shape_id);
+	    const node_shape = sel_shape[sel_shape.selectedIndex].value;
+	    add_node_at_random_pos(gr,name_box.value);
+	    init_connectedness_selectors();
+	    if (document.getElementById(hi_id).checked)
+		hilite_node(gr.ns[gr.sn[name_box.value]],colour_from_selbox_id(col_sel_id));
+	    name_box.value = "";
+	    sync_nu_nodes();
+	}
+	function find_node(inp,out_id,col_sel_id="sel_starting_safe_colour",gr=g) {
+	    const str2find = inp.value;
+	    const outspan = document.getElementById(out_id);
+	    if (gr.sn[str2find]===undefined)
+		outspan.innerHTML = " Not found";
+	    else {
+		hilite_node(gr.ns[gr.sn[str2find]],colour_from_selbox_id(col_sel_id));
+		outspan.innerHTML = " Found & highlighted";
+	    }
+	}
+	function rem_node(selid="sel_node_list1",gr=g,nued_id="nu_edges") {
+	    //const seli = document.getElementById(selid);
+	    gr.rem_vertex_by_name(name_from_selbox_id(selid));
+	    init_connectedness_selectors();
+	    sync_nu_edges();
+	    //document.getElementById("btn_save_as_sedge").disabled = true;
+	    sync_nu_nodes();
+	}
+	function init_starting_colour_selector() {
+	    const sel_box = document.getElementById("sel_starting_safe_colour");
+	    for(var i = 0, l = safe_colours.length; i < l; i++){
+		const option = safe_colours[i];
+		//                               text  value  selected
+		sel_box.options.add( new Option(option, option, false) );
+		sel_box.options[i].style.backgroundColor = "#" + option;
+	    }
+	    sel_box.selectedIndex = 102;
+	    sel_box.addEventListener("change",function(){
+		safe_colour_index = this.selectedIndex
+		sel_box.style.backgroundColor = "#" + sel_box[sel_box.selectedIndex].value;
+	    });
+	}
+	function remove_all_options(selectBox) {
+	    while (selectBox.options.length > 0) {
+		selectBox.remove(0);
+	    }
+	}
+	function init_node_selector(sel_box,nodes) {
+	    if(sel_box.options.length > 0)
+		remove_all_options(sel_box);
+	    const l = nodes.length;
+	    for(let a_key in nodes) {
+		const option = nodes[a_key].name;
+		sel_box.options.add( new Option(option,option,false));
+	    }
+	}
+	function hilite_node(node,col) {
+	    node.fillcolour = col;
+	    node.linecolour = col;
+	}
+	function hilite_selected_nodes(gr=g,sel1="sel_node_list1",sel2="sel_node_list2",col_sel_id="sel_starting_safe_colour",colours=safe_colours) {
+	    const ind1 = adj_index_from_selbox_id(sel1,gr);
+	    const ind2 = adj_index_from_selbox_id(sel2,gr);
+	    const col_sel_box = document.getElementById(col_sel_id);
+	    const sel_col = "#" + colours[col_sel_box.selectedIndex];
+	    hilite_node(gr.ns[ind1],sel_col);
+	    hilite_node(gr.ns[ind2],sel_col);
+	}
+	function connect_selected_nodes(gr=g,sel1="sel_node_list1",sel2="sel_node_list2",nued_id="nu_edges") {
+	    const ind1 = adj_index_from_selbox_id(sel1);
+	    const ind2 = adj_index_from_selbox_id(sel2);
+	    gr.add_edge(ind1,ind2);
+	    sync_nu_edges();
+	}
+	function disconnect_selected_nodes(gr=g,sel1="sel_node_list1",sel2="sel_node_list2",nued_id="nu_edges") {
+	    const ind1 = adj_index_from_selbox_id(sel1);
+	    const ind2 = adj_index_from_selbox_id(sel2);
+	    //console.log(`selected indices: ${ind1} ${ind2}`);
+	    gr.rem_edge(ind1,ind2);
+	    sync_nu_edges();
+	}
+	function init_connectedness_selectors(gr=g,sel1="sel_node_list1",sel2="sel_node_list2",res="sp_is_connected") {
+	    const sel_box1 = document.getElementById(sel1);
+	    const sel_box2 = document.getElementById(sel2);
+	    const res_targ = document.getElementById(res);
+	    const nodes = gr.ns;
+	    const len = Object.keys(nodes).length;
+	    init_node_selector(sel_box1,nodes);
+	    init_node_selector(sel_box2,nodes);
+	    //console.log("nodes length: " + nodes.length);
+	    if(len > 0) {
+		sel_box1.selectedIndex = 0;
+		sel_box2.selectedIndex = len-1;
+	    }
+	    sel_box1.addEventListener("change",function() {
+		res_targ.innerHTML = gr.is_connected(adj_index_from_selbox(this),adj_index_from_selbox(sel_box2));
+	    });
+	    sel_box2.addEventListener("change",function() {
+		res_targ.innerHTML = gr.is_connected(adj_index_from_selbox(this),adj_index_from_selbox(sel_box1));
+	    });
+	}
+	function examine_routes_between(sel1="sel_node_list1",sel2="sel_node_list2",col_sel_id="sel_starting_safe_colour",res="sp_is_route_between",gr=g) {
+	    const ind1 = adj_index_from_selbox_id(sel1);
+	    const ind2 = adj_index_from_selbox_id(sel2);
+	    const res_targ = document.getElementById(res);
+	    const col_sel_box = document.getElementById(col_sel_id);
+	    const group_colour = col_sel_box[col_sel_box.selectedIndex].value;
+	    const node1_group = [];
+	    Graph.discover_a_group(gr,ind1,group_colour,node1_group,true);
+	    res_targ.innerHTML = node1_group.includes(ind2);
+	    gr.unvisit_nodes();
+	}
+	function hilight_path_between(sel1="sel_node_list1",sel2="sel_node_list2",col_sel_id="sel_starting_safe_colour",res="sp_is_path_btw",gr=g) {
+	    const src_ind = adj_index_from_selbox_id(sel1);
+	    const trg_ind = adj_index_from_selbox_id(sel2);
+	    const pth = new BreadthFirstPathsIterative(gr,src_ind);
+	    const col_sel_box = document.getElementById(col_sel_id);
+	    const is_path = pth.has_path_to(trg_ind);
+	    document.getElementById(res).innerHTML = is_path;
+	    gr.path_col = "#" + col_sel_box[col_sel_box.selectedIndex].value;
+	    if (is_path)
+		gr.path = pth.path_to(trg_ind);
+	}
+	function update_alpha(alpha_value) {
+	    update_global_alpha(Math.abs(Number(alpha_value)) / 100);
+	}
+	function download_as_image(id_inp){
+	    // get canvas data  
+	    const img = canv.toDataURL();
+	    const fn = document.getElementById(id_inp).value;
+	    
+	    // create temporary link  
+	    const tmpLink = document.createElement('a');  
+	    tmpLink.download = fn; // set the name of the download file 
+	    tmpLink.href = img;  
+	    
+	    // temporarily add link to body and initiate the download  
+	    document.body.appendChild( tmpLink );  
+	    tmpLink.click();  
+	    document.body.removeChild( tmpLink );  
+	}
+	function save_as_csv(dat_id,inp_id,delim=elem.delim,endl=elem.endl){
+	    // get canvas data  
+	    const dat = document.getElementById(dat_id).value.trim().split(endl);
+	    const fn = document.getElementById(inp_id).value;
+
+	    let csv = "";
+            dat.forEach( str => {
+		//console.log(str);
+                csv += str.split(" ").join(delim)+endl;
+            });
+	    
+ 	    const csvData = new Blob([csv], { type: 'text/csv' });  
+            const csvUrl = URL.createObjectURL(csvData);
+	    const hiddenElement = document.createElement('a');
+            hiddenElement.href = csvUrl;
+            hiddenElement.target = '_blank';
+            hiddenElement.download = fn;
+            hiddenElement.click();
+	}
+	function save_as_sedge(inp_id,delim=elem.delim2,endl=elem.endl){
+	    // get canvas data  
+	    const fn = document.getElementById(inp_id).value;
+
+	    let dat_out = "";
+	    dat_out += g.nu_vertices + endl;
+	    dat_out += g.nu_edges + endl;
+            for (let a_key in g.adj)
+		for(let ind of g.adj[a_key])
+		    dat_out += a_key + delim + ind + endl;
+	    
+ 	    const sedge_data = new Blob([dat_out], { type: 'text' });  
+            const sedge_url = URL.createObjectURL(sedge_data);
+	    const hiddenElement = document.createElement('a');
+            hiddenElement.href = sedge_url;
+            hiddenElement.target = '_blank';
+            hiddenElement.download = fn;
+            hiddenElement.click();
+	}
+	const obj_csv = {
+	    size:0,
+	    data_file:[]
+	};
+	function read_image(input,outbox_id) {
+	    //console.log(input)
+	    if (input.files && input.files[0]) {
+		const reader = new FileReader();
+		reader.readAsBinaryString(input.files[0]);
+		reader.onload = function (e) {
+		    //console.log(e);
+		    obj_csv.size = e.total;
+		    obj_csv.data_file = e.target.result
+		    //console.log(obj_csv.dataFile)
+		    parse_csv_data(obj_csv.data_file,outbox_id);
+		}
+	    }
+	}
+	function read_image2(input,nu_nodes_id,nu_edges_id,endl=elem.endl,pstart=cb_paused_start) {
+	    //console.log(input)
+	    if (input.files && input.files[0]) {
+		const reader = new FileReader();
+		reader.readAsBinaryString(input.files[0]);
+		reader.onload = function (e) {
+		    //console.log(e);
+		    parse_sedgewick_data(e.target.result.split(endl),nu_nodes_id,nu_edges_id);
+		    init_connectedness_selectors();
+		    if(pstart.checked) {
+			console.log("pstart_checked");
+			first_step = true;
+			animate = false;
+			anim_step();
+		    }
+		}
+	    }
+	}
+	function parse_sedgewick_data(dat_lines,nuvert_id,nuedge_id,delim=elem.delim2) {
+	    const nuvert = dat_lines[0];
+	    document.getElementById(nuvert_id).value = Number(nuvert);
+	    const nuedge = dat_lines[1];
+	    document.getElementById(nuedge_id).value = Number(nuedge);
+	    console.log("Number of vertices: " + nuvert);
+	    console.log("Number of edges: " + nuedge);
+	    clear_canvas();
+	    g = new Graph("sedge");
+	    for(let i = 0; i < nuvert; ++i)
+		add_node_at_random_pos(g,i);
+	    const len = dat_lines.length
+	    for(let i = 2; i < len; ++i) {
+		const arr = dat_lines[i].trim().split(delim);
+		if (arr.length == 2)
+		    g.add_edge(Number(arr[0].trim()),Number(arr[1].trim()));
+	    }
+	}
+	function parse_csv_data(data,out_id,delim=elem.delim,endl=elem.endl){
+	    const csv_data = [];
+	    document.getElementById(out_id).value = data;
+	    const line_break = data.split(endl);
+	    line_break.forEach(res => {
+		csv_data.push(res.split(delim));
+	    });
+	    //console.table(csvData);
+	}
+	const inp_vals_map = {};
+	function setup_inp_vals_map() {
+	    const canv_dim_lock = document.getElementById("cb_canv_dim_lock");
+
+	    for (let a_val in inp_vals) {
+		inp_vals_map[a_val] = document.getElementById(a_val);
+		inp_vals_map[a_val].value = inp_vals[a_val];
+	    }
+	    inp_vals_map.sz_canvas_w.addEventListener("change",function() {
+		if(canv_dim_lock.checked) {
+		    inp_vals.sz_canvas_h = this.value;
+		    inp_vals_map.sz_canvas_h.value = this.value;
+		}
+		resize_canvas(this.value,inp_vals.sz_canvas_h);
+		inp_vals.sz_canvas_w = this.value;
+		inp_vals_map.sz_font.dispatchEvent(new Event('change',{bubbles:true}));
+		inp_vals_map.wd_line.dispatchEvent(new Event('change',{bubbles:true}));
+	    });
+	    inp_vals_map.sz_canvas_h.addEventListener("change",function() {
+		resize_canvas(inp_vals.sz_canvas_w,this.value);
+		inp_vals.sz_canvas_h = this.value;
+		inp_vals_map.sz_font.dispatchEvent(new Event('change',{bubbles:true}));
+		inp_vals_map.wd_line.dispatchEvent(new Event('change',{bubbles:true}));
+	    });
+	    inp_vals_map.sz_font.addEventListener("change",function() {
+		c2d.font = this.value + 'px sans-serif';
+		inp_vals.sz_font = this.value;
+	    });
+	    canv_dim_lock.addEventListener("change",function(){
+		if(this.checked)
+		    inp_vals_map.sz_canvas_h.disabled = true;
+		else
+		    inp_vals_map.sz_canvas_h.disabled = false;
+	    });
+	    inp_vals_map.wd_line.addEventListener("change",function() {resize_linewidth(Number(this.value));});
+	    inp_vals_map.nu_scatter.addEventListener("change",function(){update_scatter(this.value)});
+	    inp_vals_map.nu_alpha.addEventListener("change",function(){update_alpha(this.value)});
+	}
+	function update_inp_vals() {
+	    for (let a_val in inp_vals) {
+		inp_vals_map[a_val].value = inp_vals[a_val];
+		inp_vals_map[a_val].dispatchEvent(new Event('change',{bubbles:true}));
+	    }
+	}
+	function save_to_inp_vals() {
+	    for (let a_val in inp_vals)
+		 inp_vals[a_val] = inp_vals_map[a_val].value;
+	}
+	const tracer = document.getElementById("cb_tracing");
+	tracer.addEventListener("change",function() {
+	    if (this.checked && labelling.checked) {
+		labelling.checked=false;
+		clear_canvas();
+	    }
+	});
+	const labelling =  document.getElementById('cb_labels');
+	labelling.addEventListener("change",function() { if (this.checked && tracer.checked) tracer.checked=false; });
+	const cb_paused_start = document.getElementById("cb_paused_start");
+	const btn_start = document.getElementById("btn_start");
+	const btn_pause_conti = document.getElementById("btn_pause_conti");
+	btn_pause_conti.addEventListener("click",function(){
+	    pause_or_continue(this,btn_start);
+	});
+	const btn_print = document.getElementById("btn_print");
+	const btn_clear = document.getElementById("btn_clear");
+	const btn_rm_lone = document.getElementById("btn_rm_lone");
+	const btn_fresh_cols = document.getElementById("btn_refresh_colours");
+	const sel_graphalg = document.getElementById("sel_graphalg");
+	sel_graphalg.addEventListener("change",function(){
+	    proc_sel_graphalg(this);
+	});
+	const sel_nodeplace = document.getElementById("sel_nodeplace");
+	const sel_label_align = document.getElementById("sel_label_align");
+	sel_label_align.addEventListener("change",function(){
+	    //console.log("set to: " + this[this.selectedIndex].value);
+	    c2d.textAlign = this[this.selectedIndex].value;
+	});
+	const sel_label_baseline = document.getElementById("sel_label_baseline");
+	sel_label_baseline.addEventListener("change",function(){
+	    //console.log("set to: " + this[this.selectedIndex].value);
+	    c2d.textBaseline = this[this.selectedIndex].value;
+	});
+	const col_sels = {};
+	const rnd_boxes = {};
+	const off_boxes = {};
+	for (let a_key in colours) {
+	    col_sels[a_key] = document.getElementById(a_key);
+	    rnd_boxes[a_key] = document.getElementById("rnd_" + a_key);
+	    rnd_boxes[a_key].addEventListener("change",function(){col_sel_change(a_key);});
+	    off_boxes[a_key] = document.getElementById(a_key + "_off");
+	    off_boxes[a_key].addEventListener("change",function(){col_off_change(a_key);});
+	}
+	const map_node_params = {};
+	for (let it in node_params) {
+	    map_node_params[it] = [];
+	    map_node_params[it].push(document.getElementById("slider_"+it));
+	    map_node_params[it][0].value = node_params[it];
+	    map_node_params[it].push(document.getElementById("span_"+it));
+	    map_node_params[it][1].innerHTML = node_params[it];
+	    map_node_params[it][0].oninput = function() {
+		modify_params(it,Number(this.value));
+		map_node_params[it][1].innerHTML = this.value;
+	    }
+	}
+	function update_node_params() {
+	    for (let it in node_params) {
+		map_node_params[it][0].value = node_params[it];
+		map_node_params[it][1].innerHTML = node_params[it];
+	    }
+	}
+	function restart() {
+	    const multip_saved = {
+		x: node_params.fx_multip,
+		y: node_params.fy_multip,
+	    }
+	    if(btn_start.value == "Restart") {
+		first_step = true;
+		if (btn_pause_conti.value == "Continue")
+		    pause_or_continue(btn_pause_conti,btn_start);
+		if (cb_paused_start.checked) {
+		    btn_pause_conti.dispatchEvent(new Event("click",{bubbles:true}));
+		    multip_saved.x = node_params.fx_multip;
+		    node_params.fx_multip = 0;
+		    multip_saved.x = node_params.fy_multip;
+		    node_params.fy_multip = 0;
+		}
+		start(c2d,
+		      Number(inp_vals_map.nu_nodes.value),
+		      Number(inp_vals_map.nu_nodes2.value),
+		      Number(inp_vals_map.nu_edges.value),
+		      Number(inp_vals_map.nu_branches.value),
+		      Number(inp_vals_map.nu_alpha.value)
+		     );
+		post_init();
+		if (cb_paused_start.checked) {
+		    node_params.fx_multip = multip_saved.x;
+		    node_params.fy_multip = multip_saved.y;
+		}
+	    } else if (btn_start.value == "Step") {
+		first_step = false;
+		anim_step();
+	    }
+	}
+	function load_cols(cols) {
+	    for(a_col in cols) {
+		colours[a_col] = cols[a_col];
+		col_sels[a_col].value = cols[a_col];
+	    }
+	}
+	const infn = document.getElementById("infilename");
+	const freader = new FileReader();
+	freader.onload = function( ev ) {
+	    const contents = JSON.parse( decodeURIComponent( ev.target.result ) );
+	    infn.value = "";
+	    
+	    // Handle versioned configs (1.0+) with validation
+	    const config_version = contents.version || "0.9";
+	    if (contents.export_date) {
+		console.log("Loading config from: " + new Date(contents.export_date).toLocaleString());
+	    }
+	    
+	    for(let a_key in inp_vals) {
+		if (contents.inp_vals && contents.inp_vals[a_key] !== undefined) {
+		    inp_vals[a_key] = Number(contents.inp_vals[a_key]);
+		    inp_vals_map[a_key].value = Number(contents.inp_vals[a_key]);
+		}
+	    }
+	    if (contents.colours) {
+		load_cols(contents.colours);
+	    }
+	    for(let a_key in node_params) {
+		if (contents.node_params && contents.node_params[a_key] !== undefined) {
+		    node_params[a_key] = Number(contents.node_params[a_key]);
+		    map_node_params[a_key][0].value = Number(contents.node_params[a_key]);
+		}
+	    }
+	    for(let a_key in node_size) {
+		if (contents.node_size && contents.node_size[a_key] !== undefined) {
+		    node_size[a_key] = Number(contents.node_size[a_key]);
+		}
+	    }
+	    if (contents.node_shape) {
+		node_shape = contents.node_shape;
+		sync_back_shape_selection("sel_shape");
+	    }
+	    if (contents.graphalg_index !== undefined) {
+		sel_graphalg.selectedIndex = contents.graphalg_index;
+		sel_graphalg.dispatchEvent(new Event("change",{bubbles:true}));
+	    }
+	    if (contents.nodeplace_index !== undefined) {
+		sel_nodeplace.selectedIndex = contents.nodeplace_index;
+	    }
+	    if (contents.labelalign_index !== undefined) {
+		sel_label_align.selectedIndex = contents.labelalign_index;
+	    }
+	    if (contents.labelbaseline_index !== undefined) {
+		sel_label_baseline.selectedIndex = contents.labelbaseline_index;
+	    }
+	    if (contents.tracing !== undefined) {
+		tracer.checked = contents.tracing;
+		tracer.dispatchEvent(new Event("change",{bubbles:true}));
+	    }
+	    if (contents.labelling !== undefined) {
+		labelling.checked = contents.labelling;
+		labelling.dispatchEvent(new Event("change",{bubbles:true}));
+	    }
+	    // Load group styles if present
+	    if (contents.group_styles) {
+		for (let group_name in contents.group_styles) {
+		    add_group(group_name, contents.group_styles[group_name]);
+		}
+	    }
+	    config();
+	    restart();
+	    sel_label_align.dispatchEvent(new Event("change",{bubbles:true}));
+	    sel_label_baseline.dispatchEvent(new Event("change",{bubbles:true}));
+	};
+	// when it changes (ie: user selects a file)
+	infn.addEventListener("change", function() {
+	    // get the file item from the input field
+	    const file = this.files[0];
+	    // read the file as text
+	    freader.readAsText( file );
+	    // and then then load event will trigger ...
+	});
+	function pause_or_continue(btn,restart_btn) {
+	    if (btn.value == "Pause") {
+		pause();
+		btn.value = "Continue";
+		restart_btn.value = "Step";
+		restart_btn.title = "Step animation. (Ctrl + Alt + S)";
+	    } else {
+		go_on();
+		btn.value = "Pause";
+		restart_btn.value = "Restart";
+		restart_btn.title = "Restart animation. (Ctrl + Alt + Enter)";
+	    }	    
+	}
+	for (let it in col_sels)
+	    col_sels[it].addEventListener("change",function(){colours[it] = col_sels[it].value;});
+	const area_edgelist = document.getElementById("edge_list");
+	area_edgelist.placeholder = "n1,n2\nn2,n3\nn3,n1";
+
+	function save_settings(fn_id) {
+	    const fn = document.getElementById(fn_id).value;
+	    let hiddenElement = document.createElement('a');
+	    const out_val = {};
+	    save_to_inp_vals();
+	    // Add version info for future compatibility
+	    out_val.version = "1.0";
+	    out_val.export_date = new Date().toISOString();
+	    out_val.inp_vals = {};
+	    for(let a_key in inp_vals)
+		out_val.inp_vals[a_key] = Number(inp_vals[a_key]);
+	    out_val.colours = colours;
+	    out_val.node_params = {};
+	    for(let a_key in node_params)
+		out_val.node_params[a_key] = Number(node_params[a_key]);
+	    out_val.node_size = {};
+	    for(let a_key in node_size)
+		out_val.node_size[a_key] = Number(node_size[a_key]);
+	    out_val.tracing = tracer.checked;
+	    out_val.labelling = labelling.checked;
+	    out_val.node_shape = node_shape;
+	    out_val.graphalg_index = sel_graphalg.selectedIndex;
+	    out_val.nodeplace_index = sel_nodeplace.selectedIndex;
+	    out_val.labelalign_index = sel_label_align.selectedIndex;
+	    out_val.labelbaseline_index = sel_label_baseline.selectedIndex;
+	    // Export group styles if any exist
+	    out_val.group_styles = group_styles;
+	    
+	    hiddenElement.href = 'data:attachment/text,' + encodeURIComponent(JSON.stringify(out_val, null, 2));
+	    hiddenElement.target = '_blank';
+	    hiddenElement.download = fn + '.json';
+	    hiddenElement.click();
+	}
+	function add_table_rows(tbl,row_data) {
+	    const tbdy = tbl.createTBody();
+	    for(let rowind in row_data) {
+		const tr = tbdy.insertRow();
+		for(let rowtxt in row_data[rowind]) {
+		    const td = tr.insertCell();
+		    td.setAttribute("class","button1");
+		    const lbl = document.createElement("label");
+		    lbl.innerHTML = rowtxt;
+		    //const txt = document.createTextNode(rowtxt);
+		    td.appendChild(lbl);
+		    for(let celltag in row_data[rowind][rowtxt]) {
+			const td = tr.insertCell();
+			const cellcont = document.createElement(celltag);
+			for(let attrib in row_data[rowind][rowtxt][celltag])
+			    cellcont.setAttribute(attrib,row_data[rowind][rowtxt][celltag][attrib]);
+			td.appendChild(cellcont);
+		    }
+		}
+	    }
+	}
+	function create_table(target_id,tr_data) {
+	    target = document.getElementById(target_id);
+	    while(target.childNodes.length > 0)
+		target.removeChild(target.childNodes[0]);
+	    const t = document.createElement("table");
+	    const thead = t.createTHead();
+	    t.appendChild(thead);
+	    add_table_rows(t,tr_data);
+	    target.appendChild(t);
+	}
+	function set_shape_params(shape) {
+	    switch (shape) {
+	    case 'c':
+		return(['radius']);
+	    case 'e':
+		return(['radius1','radius2']);
+	    case 'r':
+		return(['width','height']);
+	    case 's':
+		return(['side']);
+	    default:
+		console.log("Unknown shape:"+shape);
+	    }
+	}
+	function prep_tr_data(labels) {
+	    const out_arr = [];
+	    const def_tag = "input";
+	    const def_attribs = {
+		"type" : "number",
+		"id"   : "inp_nodesize",
+		"min"  : "0",
+		"max"  : "200",
+		"value": "5",
+		"onchange" : "resize_nodes('inp_nodesize0','inp_nodesize1')",
+	    }
+	    for(let i in labels) {
+		const it = {};
+		it[labels[i]] = {};
+		it[labels[i]][def_tag] = {};
+		for(let attr in def_attribs) {
+		    it[labels[i]][def_tag][attr] = (attr == "id") ? def_attribs[attr] + i : def_attribs[attr];
+		}
+		out_arr.push(it);
+	    }
+	    return(out_arr);
+	}
+	function proc_shape_sel(sel_id,targ_id) {
+	    change_shape(sel_id);
+	    create_table(targ_id,prep_tr_data(set_shape_params(node_shape)));
+	    sync_back_node_sizes('inp_nodesize0','inp_nodesize1');
+	}
+	function sync_nu_edges(gr=g,nued_id="nu_edges") {
+	    document.getElementById(nued_id).value = gr.nu_edges/2;
+	}
+	function sync_nu_nodes(nu1_id="nu_nodes",nu2_id="nu_nodes2",gr=g) {
+	    document.getElementById(nu1_id).value = gr.nu_vertices;
+	    document.getElementById(nu2_id).value = 1;
+	}
+	function toggle(param) {
+	    let ret_status;
+	    if(param.checked) {
+		ret_param.checked = false;
+		status = false;
+	    } else {
+		param.checked = true;
+		ret_status = true;
+	    }
+	    param.dispatchEvent(new Event("change",{bubbles:true}));
+	    return(ret_status);
+	}
+	document.addEventListener('keydown', (event) => {
+	    const keyName = event.key;
+	    //console.log(keyName);
+	    // key only
+	    if (keyName == 'Pause') {
+		pause_or_continue(btn_pause_conti,btn_start);
+	    }
+	    // Ctrl + key
+	    if (event.ctrlKey && keyName == 'Enter')
+		btn_start.dispatchEvent(new Event("click",{bubbles:true}));
+	    // Alt + key
+	    if (event.altKey && keyName == 'Delete') {
+		btn_rm_lone.dispatchEvent(new Event("click",{bubbles:true}));
+	    }
+	    // Ctrl + Alt + key
+	    if (event.ctrlKey && event.altKey && keyName == 'c') {
+		btn_clear.dispatchEvent(new Event("click",{bubbles:true}));
+	    }
+	    if (event.ctrlKey && event.altKey && keyName == 'l') {
+		toggle(labelling);
+	    }
+	    if (event.ctrlKey && event.altKey && keyName == 'p') {
+		btn_print.dispatchEvent(new Event("click",{bubbles:true}));
+	    }
+	    if (event.ctrlKey && event.altKey && keyName == 'r') {
+		btn_fresh_cols.dispatchEvent(new Event("click",{bubbles:true}));
+	    }
+	    if (event.ctrlKey && event.altKey && keyName == 's') {
+		anim_step();
+	    }
+	    if (event.ctrlKey && event.altKey && keyName == 't') {
+		toggle(tracer);
+	    }
+	    // Ctrl + Shift + key
+	    if (event.ctrlKey && event.shiftKey && keyName == 'ArrowUp') {
+		nudge('up');
+	    }
+	    if (event.ctrlKey && event.shiftKey && keyName == 'ArrowDown') {
+		nudge('down');
+	    }
+	    if (event.ctrlKey && event.shiftKey && keyName == 'ArrowLeft') {
+		nudge('left');
+	    }
+	    if (event.ctrlKey && event.shiftKey && keyName == 'ArrowRight') {
+		nudge('right');
+	    }
+
+	}, false);
+      </script>
+    </body>
+</html>

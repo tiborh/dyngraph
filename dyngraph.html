@@ -14,16 +14,16 @@
 	  function init() {
 	      setup_inp_vals_map();
 	      init_starting_colour_selector();
-	      document.getElementById("sel_starting_safe_colour").dispatchEvent(new Event("change"));
+	      document.getElementById("sel_starting_safe_colour").dispatchEvent(new Event("change",{bubbles:true}));
 	  }
 	  function post_init() {
 	      init_connectedness_selectors();
 	  }
 	  function config() {
 	      fill_in_colours();
-	      tracer.dispatchEvent(new Event('change'));
-	      labelling.dispatchEvent(new Event('change'));
-	      document.getElementById("sel_shape").dispatchEvent(new Event("change"));
+	      tracer.dispatchEvent(new Event('change',{bubbles:true}));
+	      labelling.dispatchEvent(new Event('change',{bubbles:true}));
+	      document.getElementById("sel_shape").dispatchEvent(new Event("change",{bubbles:true}));
 	      update_inp_vals();
 	      update_node_params();
 	  }
@@ -105,21 +105,27 @@
 	  h1 {
 	      text-align: center;
 	  }
+	  /* Responsive font sizing preserved for small screens using clamp() */
 	  label {
-	      font-size: 1.5vw;
+	      font-size: clamp(0.9rem, 1.5vw, 1.3rem);
 	      vertical-align: middle;
 	  }
 	  input, button, select {
-	      font-size: 1vw;
+	      font-size: clamp(0.85rem, 1vw, 1.1rem);
 	      vertical-align: middle;
 	  }
 	  input.cb {
-	      width: 1.8vw;
-	      height: 1.8vh;
+	      width: clamp(1.6rem, 1.8vw, 2.2rem);
+	      height: clamp(1.6rem, 1.8vh, 2.2rem);
 	  }
 	  input.rb {
-	      width: 2.25vw;
-	      height: 2.25vh;
+	      width: clamp(1.9rem, 2.25vw, 2.6rem);
+	      height: clamp(1.9rem, 2.25vh, 2.6rem);
+	  }
+	  /* Disabled elements: dim and prevent pointer events to avoid nested-label click issues */
+	  input[disabled], select[disabled], button[disabled] {
+	      opacity: 0.6;
+	      pointer-events: none;
 	  }
 	  .column {
 	      float: left;
@@ -505,11 +511,11 @@
 	      <td><input type="button" title="した (Ctrl+Shift+DownArrow)" id="btn_down" onClick="nudge('down');" value="下" /></td>
 	    </tr>
 	    <tr>
-	      <td><label><input type="button" id="btn_discover_groups" onClick="reset_safe_colour_index();Graph.discover_node_groups(g);" value="Colour Groups" /> or <input type="button" id="btn_connect_groups" onClick="reset_safe_colour_index();Graph.connect_node_groups(g,'cb_rnd_conn_grps');sync_nu_edges();" value="Connect Groups" /> (rand:<input type="checkbox" class="cb" id="cb_rnd_conn_grps" checked>) starting with colour </label><select class="button1" id="sel_starting_safe_colour"></select></td>
+	      <td><div class="label-inline"><input type="button" id="btn_discover_groups" onClick="reset_safe_colour_index();Graph.discover_node_groups(g);" value="Colour Groups" /> or <input type="button" id="btn_connect_groups" onClick="reset_safe_colour_index();Graph.connect_node_groups(g,'cb_rnd_conn_grps');sync_nu_edges();" value="Connect Groups" /> (rand:<input type="checkbox" class="cb" id="cb_rnd_conn_grps" checked>) starting with colour </div><select class="button1" id="sel_starting_safe_colour"></select></td>
 	      <td></td>
 	    </tr>
 	    <tr>
-	      <td><label>Edge between <select id="sel_node_list1"></select> and <select id="sel_node_list2"></select>? <span id="sp_is_connected"></span> <input type="button" id="btn_hilite_sel_nodes" value="highlight"  onclick="hilite_selected_nodes();"/> <input type="button" id="btn_connect_sel_nodes" value="connect"  onclick="connect_selected_nodes();"/> <input type="button" id="btn_disconnect_sel_nodes" value="disconnect"  onclick="disconnect_selected_nodes();"/> <input type="button" onclick="rem_node('sel_node_list1')" value="Remove first" /> <input type="button" onclick="rem_node('sel_node_list2')" value="Remove second" /></label></td>
+	      <td><div class="label-inline">Edge between <select id="sel_node_list1"></select> and <select id="sel_node_list2"></select>? <span id="sp_is_connected"></span> <input type="button" id="btn_hilite_sel_nodes" value="highlight"  onclick="hilite_selected_nodes();"/> <input type="button" id="btn_connect_sel_nodes" value="connect"  onclick="connect_selected_nodes();"/> <input type="button" id="btn_disconnect_sel_nodes" value="disconnect"  onclick="disconnect_selected_nodes();"/> <input type="button" onclick="rem_node('sel_node_list1')" value="Remove first" /> <input type="button" onclick="rem_node('sel_node_list2')" value="Remove second" /></div></td>
 	      <td></td>
 	    </tr>
 	    <tr>
@@ -517,11 +523,11 @@
 	      <td></td>
 	    </tr>
 	    <tr>
-	      <td><label>Path between the two? <input type="button" id="btn_path_btw" value="Examine" onclick="hilight_path_between();"/> <span id="sp_is_path_btw"></span> <input type="button" value="Rem Path" onclick="g.path=[];"/></label></td>
+	      <td><div class="label-inline">Path between the two? <input type="button" id="btn_path_btw" value="Examine" onclick="hilight_path_between();"/> <span id="sp_is_path_btw"></span> <input type="button" value="Rem Path" onclick="g.path=[];"/></div></td>
 	      <td></td>
 	    </tr>
 	    <tr>
-	      <td><label>Add node with name <input type="text" id="inp_new_node_name" onchange="add_new_node(this,'cb_hilite_added')" size="10" /> (highlight: <input type="checkbox" class="cb" id="cb_hilite_added" checked>)</label></td>
+	      <td><div class="label-inline">Add node with name <input type="text" id="inp_new_node_name" onchange="add_new_node(this,'cb_hilite_added')" size="10" /> (highlight: <input type="checkbox" class="cb" id="cb_hilite_added" checked>)</div></td>
 	      <td></td>
 	    </tr>
 	    <tr>
@@ -822,14 +828,14 @@
 		}
 		resize_canvas(this.value,inp_vals.sz_canvas_h);
 		inp_vals.sz_canvas_w = this.value;
-		inp_vals_map.sz_font.dispatchEvent(new Event('change'));
-		inp_vals_map.wd_line.dispatchEvent(new Event('change'));
+		inp_vals_map.sz_font.dispatchEvent(new Event('change',{bubbles:true}));
+		inp_vals_map.wd_line.dispatchEvent(new Event('change',{bubbles:true}));
 	    });
 	    inp_vals_map.sz_canvas_h.addEventListener("change",function() {
 		resize_canvas(inp_vals.sz_canvas_w,this.value);
 		inp_vals.sz_canvas_h = this.value;
-		inp_vals_map.sz_font.dispatchEvent(new Event('change'));
-		inp_vals_map.wd_line.dispatchEvent(new Event('change'));
+		inp_vals_map.sz_font.dispatchEvent(new Event('change',{bubbles:true}));
+		inp_vals_map.wd_line.dispatchEvent(new Event('change',{bubbles:true}));
 	    });
 	    inp_vals_map.sz_font.addEventListener("change",function() {
 		c2d.font = this.value + 'px sans-serif';
@@ -848,7 +854,7 @@
 	function update_inp_vals() {
 	    for (let a_val in inp_vals) {
 		inp_vals_map[a_val].value = inp_vals[a_val];
-		inp_vals_map[a_val].dispatchEvent(new Event('change'));
+		inp_vals_map[a_val].dispatchEvent(new Event('change',{bubbles:true}));
 	    }
 	}
 	function save_to_inp_vals() {
@@ -927,7 +933,7 @@
 		if (btn_pause_conti.value == "Continue")
 		    pause_or_continue(btn_pause_conti,btn_start);
 		if (cb_paused_start.checked) {
-		    btn_pause_conti.dispatchEvent(new Event("click"));
+		    btn_pause_conti.dispatchEvent(new Event("click",{bubbles:true}));
 		    multip_saved.x = node_params.fx_multip;
 		    node_params.fx_multip = 0;
 		    multip_saved.x = node_params.fy_multip;
@@ -994,7 +1000,7 @@
 	    }
 	    if (contents.graphalg_index !== undefined) {
 		sel_graphalg.selectedIndex = contents.graphalg_index;
-		sel_graphalg.dispatchEvent(new Event("change"));
+		sel_graphalg.dispatchEvent(new Event("change",{bubbles:true}));
 	    }
 	    if (contents.nodeplace_index !== undefined) {
 		sel_nodeplace.selectedIndex = contents.nodeplace_index;
@@ -1007,11 +1013,11 @@
 	    }
 	    if (contents.tracing !== undefined) {
 		tracer.checked = contents.tracing;
-		tracer.dispatchEvent(new Event("change"));
+		tracer.dispatchEvent(new Event("change",{bubbles:true}));
 	    }
 	    if (contents.labelling !== undefined) {
 		labelling.checked = contents.labelling;
-		labelling.dispatchEvent(new Event("change"));
+		labelling.dispatchEvent(new Event("change",{bubbles:true}));
 	    }
 	    // Load group styles if present
 	    if (contents.group_styles) {
@@ -1021,8 +1027,8 @@
 	    }
 	    config();
 	    restart();
-	    sel_label_align.dispatchEvent(new Event("change"));
-	    sel_label_baseline.dispatchEvent(new Event("change"));
+	    sel_label_align.dispatchEvent(new Event("change",{bubbles:true}));
+	    sel_label_baseline.dispatchEvent(new Event("change",{bubbles:true}));
 	};
 	// when it changes (ie: user selects a file)
 	infn.addEventListener("change", function() {
@@ -1171,7 +1177,7 @@
 		param.checked = true;
 		ret_status = true;
 	    }
-	    param.dispatchEvent(new Event("change"));
+	    param.dispatchEvent(new Event("change",{bubbles:true}));
 	    return(ret_status);
 	}
 	document.addEventListener('keydown', (event) => {
@@ -1183,23 +1189,23 @@
 	    }
 	    // Ctrl + key
 	    if (event.ctrlKey && keyName == 'Enter')
-		btn_start.dispatchEvent(new Event("click"));
+		btn_start.dispatchEvent(new Event("click",{bubbles:true}));
 	    // Alt + key
 	    if (event.altKey && keyName == 'Delete') {
-		btn_rm_lone.dispatchEvent(new Event("click"));
+		btn_rm_lone.dispatchEvent(new Event("click",{bubbles:true}));
 	    }
 	    // Ctrl + Alt + key
 	    if (event.ctrlKey && event.altKey && keyName == 'c') {
-		btn_clear.dispatchEvent(new Event("click"));
+		btn_clear.dispatchEvent(new Event("click",{bubbles:true}));
 	    }
 	    if (event.ctrlKey && event.altKey && keyName == 'l') {
 		toggle(labelling);
 	    }
 	    if (event.ctrlKey && event.altKey && keyName == 'p') {
-		btn_print.dispatchEvent(new Event("click"));
+		btn_print.dispatchEvent(new Event("click",{bubbles:true}));
 	    }
 	    if (event.ctrlKey && event.altKey && keyName == 'r') {
-		btn_fresh_cols.dispatchEvent(new Event("click"));
+		btn_fresh_cols.dispatchEvent(new Event("click",{bubbles:true}));
 	    }
 	    if (event.ctrlKey && event.altKey && keyName == 's') {
 		anim_step();
