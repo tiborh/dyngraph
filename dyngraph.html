@@ -134,6 +134,14 @@
 	      gap: 0.5rem;
 	      flex-wrap: wrap;
 	  }
+	  /* Mobile-specific increases to keep controls legible on small screens */
+	  @media (max-width: 480px) {
+	    label { font-size: 1.25rem !important; }
+	    input, button, select { font-size: 1.1rem !important; }
+	    input.cb { width: 2.4rem; height: 2.4rem; }
+	    input.rb { width: 2.8rem; height: 2.8rem; }
+	    .button1 { width: 9rem; }
+	  }
 	  .column {
 	      float: left;
 	      padding: 1vw;
