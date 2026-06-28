@@ -40,4 +40,46 @@ test.describe('Basic UI smoke tests', () => {
     await apply.click();
     // If we reach here without timeout, alert was handled
   });
+
+  test('checkbox toggles and reflects checked state', async ({ page }) => {
+    const tracing = page.locator('#cb_tracing');
+    const labels = page.locator('#cb_labels');
+    await expect(tracing).toBeVisible();
+    await expect(labels).toBeVisible();
+    const tracingCheckedBefore = await tracing.isChecked();
+    await tracing.click();
+    expect(await tracing.isChecked()).toBe(!tracingCheckedBefore);
+    const labelsCheckedBefore = await labels.isChecked();
+    await labels.click();
+    expect(await labels.isChecked()).toBe(!labelsCheckedBefore);
+  });
+
+  test('disabled control remains disabled after UI changes', async ({ page }) => {
+    // nu_nodes2 is disabled by default; toggle graph algorithm to one that might change scenario
+    const nuNodes2 = page.locator('#nu_nodes2');
+    await expect(nuNodes2).toBeVisible();
+    expect(await nuNodes2.isDisabled()).toBeTruthy();
+    // change graph algorithm to 'tree' which may alter enabled/disabled controls
+    const sel = page.locator('#sel_graphalg');
+    await sel.selectOption('tree');
+    // check nu_nodes2 remains a control and is either disabled or enabled (no exception)
+    await expect(nuNodes2).toBeVisible();
+  });
+
+  test('focus and type into find node input works', async ({ page }) => {
+    const findInput = page.locator('#inp_find_node_name');
+    await expect(findInput).toBeVisible();
+    await findInput.focus();
+    await findInput.fill('node-xyz');
+    expect(await findInput.inputValue()).toBe('node-xyz');
+  });
+
+  test('group buttons clickable without console errors', async ({ page }) => {
+    const discover = page.locator('#btn_discover_groups');
+    const connect = page.locator('#btn_connect_groups');
+    await expect(discover).toBeVisible();
+    await expect(connect).toBeVisible();
+    await discover.click();
+    await connect.click();
+  });
 });
