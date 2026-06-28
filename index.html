@@ -15,6 +15,13 @@
 	      setup_inp_vals_map();
 	      init_starting_colour_selector();
 	      document.getElementById("sel_starting_safe_colour").dispatchEvent(new Event("change",{bubbles:true}));
+	      try {
+	          const m = localStorage.getItem('mobile_ui');
+	          const cb = document.getElementById('cb_mobile_ui');
+	          if (cb && m === '1') { cb.checked = true; set_mobile_ui(true); }
+	      } catch (e) {
+	          // ignore
+	      }
 	  }
 	  function post_init() {
 	      init_connectedness_selectors();
@@ -386,6 +393,10 @@
 	      <td colspan="2"><input title="select settings file to load" type="file" id="infilename"></td>
 	    </tr>
 	    <tr><td colspan="2" class="centred"><label>Misc Parameters</label></td></tr>
+<tr>
+  <td><label for="cb_mobile_ui">Mobile UI</label></td>
+  <td><input id="cb_mobile_ui" type="checkbox" onchange="set_mobile_ui(this.checked)" /></td>
+</tr>
 	    <tr>
 	      <td colspan="2">
 		<table>
