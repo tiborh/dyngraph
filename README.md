@@ -32,8 +32,20 @@ The grouping of the nodes peaked my interest. For this reason, simple controls h
 
 ## Limitations ##
 
-1. Works well with Chromium engine only.
-    * More or less works with FF engine too, but layout of controls fall apart
-    * and button inactivation is unreliable
+1. Works well with Chromium engine.
+    * Firefox compatibility was improved (form sizing, disabled-state styling, event bubbling fixes). Run the Playwright e2e smoke tests to verify in your environment.
+
+## Testing ##
+
+Run unit and e2e tests locally:
+
+- Install dependencies: npm ci
+- Unit tests (Mocha): npm test
+- Install Playwright browsers (required for e2e): npx playwright install --with-deps
+- Playwright e2e (Firefox): npm run test:e2e
+- Run both: npm run test:all
+
+CI: A GitHub Actions workflow is included (.github/workflows/ci.yml) that runs unit tests and Playwright Firefox e2e on push and pull requests.
+
 
 ![heptagon with traces on](https://github.com/tiborh/dyngraph/blob/master/img/heptagon_trace.png?raw=true)
