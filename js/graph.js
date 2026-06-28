@@ -312,3 +312,7 @@ class Graph {
 	document.getElementById(rnd_id).checked ? this.connect_node_groups_rand(gr) : this.connect_node_groups_first(gr);
     }
 }
+
+if (typeof globalThis !== 'undefined') {
+    globalThis.Graph = Graph;
+}

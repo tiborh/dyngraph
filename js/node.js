@@ -387,3 +387,7 @@ class Node {
         return g.name+": coord.: (" + g.x + ","+g.y+") forces: ("+ g.fx + ","+g.fy+")";
     }
 }
+
+if (typeof globalThis !== 'undefined') {
+    globalThis.Node = Node;
+}
