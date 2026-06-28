@@ -20,6 +20,11 @@ function set_seed(seed) {
         console.warn('seedrandom not available; falling back to Math.random');
         rng = Math.random;
     }
+    // Guard: ensure rng is callable
+    if (typeof rng !== 'function') {
+        console.warn('seedrandom did not return a function; falling back to Math.random');
+        rng = Math.random;
+    }
     // Re-shuffle safe colors with new seed
     safe_colours.sort((a,b) => Math.floor(rng()*2) == 1 ? -1 : 0);
     safe_colour_index = 0;
