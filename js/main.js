@@ -10,8 +10,15 @@ let rng = Math.random;
 function set_seed(seed) {
     if (seed === "" || seed === null) {
         rng = Math.random;
-    } else {
+    } else if (typeof seedrandom === 'function') {
+        rng = seedrandom(seed);
+    } else if (typeof Math.seedrandom === 'function') {
+        rng = Math.seedrandom(seed);
+    } else if (typeof window !== 'undefined' && typeof window.seedrandom === 'function') {
         rng = window.seedrandom(seed);
+    } else {
+        console.warn('seedrandom not available; falling back to Math.random');
+        rng = Math.random;
     }
     // Re-shuffle safe colors with new seed
     safe_colours.sort((a,b) => Math.floor(rng()*2) == 1 ? -1 : 0);
