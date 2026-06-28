@@ -127,6 +127,13 @@
 	      opacity: 0.6;
 	      pointer-events: none;
 	  }
+	  /* Inline label container to avoid wrapping controls inside <label> */
+	  .label-inline {
+	      display: inline-flex;
+	      align-items: center;
+	      gap: 0.5rem;
+	      flex-wrap: wrap;
+	  }
 	  .column {
 	      float: left;
 	      padding: 1vw;
@@ -357,7 +364,7 @@
 	    </tr>
 	    <tr>
 	      <td><label>Output file</label></td>
-	      <td><label><input type="text" class="button1" id="out_fn" value="settings.json" /></label></td>
+	      <td><input type="text" class="button1" id="out_fn" value="settings.json" /></td>
 	    </tr>
 	    <tr>
 	      <td><input type="button" title="Ctrl+Alt+C" class="button1" id="btn_clear" onClick="clear_canvas();" value="Clear Canvas" /></td>
@@ -511,27 +518,27 @@
 	      <td><input type="button" title="した (Ctrl+Shift+DownArrow)" id="btn_down" onClick="nudge('down');" value="下" /></td>
 	    </tr>
 	    <tr>
-	      <td><label><input type="button" id="btn_discover_groups" onClick="reset_safe_colour_index();Graph.discover_node_groups(g);" value="Colour Groups" /> or <input type="button" id="btn_connect_groups" onClick="reset_safe_colour_index();Graph.connect_node_groups(g,'cb_rnd_conn_grps');sync_nu_edges();" value="Connect Groups" /> (rand:<input type="checkbox" class="cb" id="cb_rnd_conn_grps" checked>) starting with colour </label><select class="button1" id="sel_starting_safe_colour"></select></td>
+	      <td><div class="label-inline"><input type="button" id="btn_discover_groups" onClick="reset_safe_colour_index();Graph.discover_node_groups(g);" value="Colour Groups" /> or <input type="button" id="btn_connect_groups" onClick="reset_safe_colour_index();Graph.connect_node_groups(g,'cb_rnd_conn_grps');sync_nu_edges();" value="Connect Groups" /> (rand:<input type="checkbox" class="cb" id="cb_rnd_conn_grps" checked>) starting with colour </div><select class="button1" id="sel_starting_safe_colour"></select></td>
 	      <td></td>
 	    </tr>
 	    <tr>
-	      <td><label>Edge between <select id="sel_node_list1"></select> and <select id="sel_node_list2"></select>? <span id="sp_is_connected"></span> <input type="button" id="btn_hilite_sel_nodes" value="highlight"  onclick="hilite_selected_nodes();"/> <input type="button" id="btn_connect_sel_nodes" value="connect"  onclick="connect_selected_nodes();"/> <input type="button" id="btn_disconnect_sel_nodes" value="disconnect"  onclick="disconnect_selected_nodes();"/> <input type="button" onclick="rem_node('sel_node_list1')" value="Remove first" /> <input type="button" onclick="rem_node('sel_node_list2')" value="Remove second" /></label></td>
+	      <td><div class="label-inline">Edge between <select id="sel_node_list1"></select> and <select id="sel_node_list2"></select>? <span id="sp_is_connected"></span></div> <input type="button" id="btn_hilite_sel_nodes" value="highlight" onclick="hilite_selected_nodes();"/> <input type="button" id="btn_connect_sel_nodes" value="connect" onclick="connect_selected_nodes();"/> <input type="button" id="btn_disconnect_sel_nodes" value="disconnect" onclick="disconnect_selected_nodes();"/> <input type="button" onclick="rem_node('sel_node_list1')" value="Remove first" /> <input type="button" onclick="rem_node('sel_node_list2')" value="Remove second" /></td>
 	      <td></td>
 	    </tr>
 	    <tr>
-	      <td><label>Route between the two? <input type="button" id="btn_route" value="Examine" onclick="examine_routes_between();"/> <span id="sp_is_route_between"></span></label></td>
+	      <td><div class="label-inline">Route between the two?</div> <input type="button" id="btn_route" value="Examine" onclick="examine_routes_between();"/> <span id="sp_is_route_between"></span></td>
 	      <td></td>
 	    </tr>
 	    <tr>
-	      <td><label>Path between the two? <input type="button" id="btn_path_btw" value="Examine" onclick="hilight_path_between();"/> <span id="sp_is_path_btw"></span> <input type="button" value="Rem Path" onclick="g.path=[];"/></label></td>
+	      <td><div class="label-inline">Path between the two?</div> <input type="button" id="btn_path_btw" value="Examine" onclick="hilight_path_between();"/> <span id="sp_is_path_btw"></span> <input type="button" value="Rem Path" onclick="g.path=[];"/></td>
 	      <td></td>
 	    </tr>
 	    <tr>
-	      <td><label>Add node with name <input type="text" id="inp_new_node_name" onchange="add_new_node(this,'cb_hilite_added')" size="10" /> (highlight: <input type="checkbox" class="cb" id="cb_hilite_added" checked>)</label></td>
+	      <td><div class="label-inline">Add node with name <input type="text" id="inp_new_node_name" onchange="add_new_node(this,'cb_hilite_added')" size="10" /> (highlight: <input type="checkbox" class="cb" id="cb_hilite_added" checked>)</div></td>
 	      <td></td>
 	    </tr>
 	    <tr>
-	      <td><label>Find node with name <input type="text" id="inp_find_node_name" onchange="find_node(this,'sp_found_node')" size="10" /><span id="sp_found_node"></span></label></td>
+	      <td><label for="inp_find_node_name">Find node with name</label> <input type="text" id="inp_find_node_name" onchange="find_node(this,'sp_found_node')" size="10" /> <span id="sp_found_node"></span></td>
 	      <td></td>
 	    </tr>
 	  </table>

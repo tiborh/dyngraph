@@ -127,6 +127,13 @@
 	      opacity: 0.6;
 	      pointer-events: none;
 	  }
+	  /* Inline label container to avoid wrapping controls inside <label> */
+	  .label-inline {
+	      display: inline-flex;
+	      align-items: center;
+	      gap: 0.5rem;
+	      flex-wrap: wrap;
+	  }
 	  .column {
 	      float: left;
 	      padding: 1vw;
@@ -357,7 +364,7 @@
 	    </tr>
 	    <tr>
 	      <td><label>Output file</label></td>
-	      <td><label><input type="text" class="button1" id="out_fn" value="settings.json" /></label></td>
+	      <td><input type="text" class="button1" id="out_fn" value="settings.json" /></td>
 	    </tr>
 	    <tr>
 	      <td><input type="button" title="Ctrl+Alt+C" class="button1" id="btn_clear" onClick="clear_canvas();" value="Clear Canvas" /></td>
@@ -519,11 +526,11 @@
 	      <td></td>
 	    </tr>
 	    <tr>
-	      <td><label>Route between the two? <input type="button" id="btn_route" value="Examine" onclick="examine_routes_between();"/> <span id="sp_is_route_between"></span></label></td>
+	      <td><div class="label-inline">Route between the two?</div> <input type="button" id="btn_route" value="Examine" onclick="examine_routes_between();"/> <span id="sp_is_route_between"></span></td>
 	      <td></td>
 	    </tr>
 	    <tr>
-	      <td><div class="label-inline">Path between the two? <input type="button" id="btn_path_btw" value="Examine" onclick="hilight_path_between();"/> <span id="sp_is_path_btw"></span> <input type="button" value="Rem Path" onclick="g.path=[];"/></div></td>
+	      <td><div class="label-inline">Path between the two?</div> <input type="button" id="btn_path_btw" value="Examine" onclick="hilight_path_between();"/> <span id="sp_is_path_btw"></span> <input type="button" value="Rem Path" onclick="g.path=[];"/></td>
 	      <td></td>
 	    </tr>
 	    <tr>
@@ -531,7 +538,7 @@
 	      <td></td>
 	    </tr>
 	    <tr>
-	      <td><label>Find node with name <input type="text" id="inp_find_node_name" onchange="find_node(this,'sp_found_node')" size="10" /><span id="sp_found_node"></span></label></td>
+	      <td><label for="inp_find_node_name">Find node with name</label> <input type="text" id="inp_find_node_name" onchange="find_node(this,'sp_found_node')" size="10" /> <span id="sp_found_node"></span></td>
 	      <td></td>
 	    </tr>
 	  </table>
