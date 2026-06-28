@@ -18,7 +18,12 @@
 	      try {
 	          const m = localStorage.getItem('mobile_ui');
 	          const cb = document.getElementById('cb_mobile_ui');
-	          if (cb && m === '1') { cb.checked = true; set_mobile_ui(true); }
+	          const cbtop = document.getElementById('cb_mobile_ui_top');
+	          if (m === '1') {
+	              if (cb) cb.checked = true;
+	              if (cbtop) cbtop.checked = true;
+	              set_mobile_ui(true);
+	          }
 	      } catch (e) {
 	          // ignore
 	      }
@@ -149,6 +154,38 @@
 	    input.rb { width: 2.8rem; height: 2.8rem; }
 	    .button1 { width: 9rem; }
 	  }
+
+	  /* mobile-ui class forces mobile sizing irrespective of viewport */
+	  body.mobile-ui label { font-size: 1.25rem !important; }
+	  body.mobile-ui input, body.mobile-ui button, body.mobile-ui select { font-size: 1.1rem !important; }
+	  body.mobile-ui input.cb { width: 2.4rem; height: 2.4rem; }
+
+	  /* brief transition when toggling mobile UI */
+	  body.mobile-ui-transition label,
+	  body.mobile-ui-transition input,
+	  body.mobile-ui-transition button,
+	  body.mobile-ui-transition select {
+	    transition: font-size 240ms ease, padding 240ms ease, margin 240ms ease;
+	  }
+
+	  /* prominent floating toggle */
+	  .mobile-toggle {
+	    position: fixed;
+	    top: 0.6rem;
+	    right: 0.6rem;
+	    background: rgba(0,0,0,0.4);
+	    color: #fff;
+	    padding: 0.35rem 0.5rem;
+	    border-radius: 0.5rem;
+	    z-index: 9999;
+	    display: flex;
+	    align-items: center;
+	    gap: 0.5rem;
+	    font-size: 0.95rem;
+	    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+	  }
+	  .mobile-toggle input { transform: scale(1.1); }
+
 	  .column {
 	      float: left;
 	      padding: 1vw;
@@ -223,6 +260,9 @@
 	</style>
     </head>
     <body onload="init();config();restart();">
+      <div class="mobile-toggle" role="region" aria-label="Mobile UI toggle">
+        <label style="display:flex;align-items:center;gap:0.4rem;">Mobile UI <input id="cb_mobile_ui_top" type="checkbox" onchange="set_mobile_ui(this.checked)" /></label>
+      </div>
       <div id="main_container">
         <div class="column" id="panel_space">
 	  <table id="tbl_shape">
