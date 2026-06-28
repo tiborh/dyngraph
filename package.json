@@ -11,7 +11,8 @@
   "devDependencies": {
     "mocha": "^10.2.0",
     "chai": "^4.3.7",
-    "@playwright/test": "^1.44.0"
+    "@playwright/test": "^1.44.0",
+    "serialize-javascript": "^7.0.5"
   },
   "postinstall": "npx playwright install --with-deps"
 }
