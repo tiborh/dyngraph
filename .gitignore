@@ -9,6 +9,11 @@ node_modules/
 test-results/
 .cache/ms-playwright/
 
+# Playwright and test output
+.test-results/
+test-results/
+.cache/ms-playwright/
+
 # IDEs
 .vscode/
 .idea/
