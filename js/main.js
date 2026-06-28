@@ -108,10 +108,21 @@ function get_group_nodes(groupName) {
  */
 function set_mobile_ui(enabled) {
     if (typeof document === 'undefined') return;
+    // add transition class to animate changes briefly
+    document.body.classList.add('mobile-ui-transition');
+    window.setTimeout(() => document.body.classList.remove('mobile-ui-transition'), 400);
+
     if (enabled)
         document.body.classList.add('mobile-ui');
     else
         document.body.classList.remove('mobile-ui');
+
+    // sync all mobile ui checkboxes (prominent and panel)
+    try {
+        const cbs = document.querySelectorAll('#cb_mobile_ui, #cb_mobile_ui_top');
+        cbs.forEach(cb => { try { cb.checked = !!enabled; } catch(e){} });
+    } catch (e) {}
+
     try {
         localStorage.setItem('mobile_ui', enabled ? '1' : '0');
     } catch (e) {
