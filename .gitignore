@@ -1,2 +1,18 @@
 *.code-workspace
 *~
+
+# Node modules
+node_modules/
+
+# Playwright and test output
+.test-results/
+test-results/
+.cache/ms-playwright/
+
+# IDEs
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
