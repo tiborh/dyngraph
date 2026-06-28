@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "test": "mocha --recursive",
+    "test": "mocha --recursive tests/unit",
     "test:e2e": "playwright test",
     "test:all": "npm run test && npm run test:e2e"
   },
