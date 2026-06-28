@@ -3,10 +3,14 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "test": "mocha --recursive"
+    "test": "mocha --recursive",
+    "test:e2e": "playwright test",
+    "test:all": "npm run test && npm run test:e2e"
   },
   "devDependencies": {
     "mocha": "^10.2.0",
-    "chai": "^4.3.7"
-  }
+    "chai": "^4.3.7",
+    "@playwright/test": "^1.44.0"
+  },
+  "postinstall": "npx playwright install --with-deps"
 }
