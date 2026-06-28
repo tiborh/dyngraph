@@ -53,5 +53,11 @@ See also:
 - ROADMAP.md — planned work and priorities.
 - IMPROVEMENT_IDEAS.md — canonical list of tracked improvement ideas (IDs can be referenced in issues/PRs).
 
+Local mobile testing
+
+- Start a LAN-accessible static server: npm run serve:local
+- Optionally specify a port: npm run serve:local -- 9000
+- The script binds to 0.0.0.0 and prints local IPs; open http://<host-ip>:<port>/dyngraph.html from your mobile browser.
+- Ensure host firewall/network allows the chosen port.
 
 ![heptagon with traces on](https://github.com/tiborh/dyngraph/blob/master/img/heptagon_trace.png?raw=true)
