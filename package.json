@@ -7,7 +7,7 @@
     "test:e2e": "playwright test",
     "test:all": "npm run test && npm run test:e2e",
     "serve:local": "node tools/run-local-server.js"
-  ,
+  },
   "devDependencies": {
     "mocha": "^10.2.0",
     "chai": "^4.3.7",
