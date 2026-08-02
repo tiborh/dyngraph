@@ -957,6 +957,8 @@
 	sel_graphalg.addEventListener("change",function(){
 	    proc_sel_graphalg(this);
 	});
+	// Sync JS state with browser-restored select value on page load
+	proc_sel_graphalg(sel_graphalg);
 	const sel_nodeplace = document.getElementById("sel_nodeplace");
 	const sel_label_align = document.getElementById("sel_label_align");
 	sel_label_align.addEventListener("change",function(){
@@ -971,6 +973,8 @@
 		g.updateLabelPositions();
 	    }
 	});
+	// Sync JS state with browser-restored select value on page load
+	label_mode = sel_label_mode.value;
 	const sel_label_baseline = document.getElementById("sel_label_baseline");
 	sel_label_baseline.addEventListener("change",function(){
 	    //console.log("set to: " + this[this.selectedIndex].value);
