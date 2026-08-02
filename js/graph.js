@@ -154,10 +154,11 @@ class Graph {
     * @param {object} params - Node drawing parameters (from node_params)
     * @param {boolean} draw_trace - Whether to draw trace lines
     * @param {boolean} draw_labels - Whether to draw node labels
+    * @param {boolean} auto_labels - Whether to use per-node auto label offsets
     */
-    draw(params,draw_trace,draw_labels) {
+    draw(params,draw_trace,draw_labels,auto_labels) {
         for (let i in this.ns) {
-            Node.draw(this.ns[i],params,draw_trace,draw_labels);
+            Node.draw(this.ns[i],params,draw_trace,draw_labels,auto_labels);
 	    for (let j of this.adj[i])
 		if (j < i)
 		    this.constructor.draw_edge(this.ns[i],this.ns[j],params,draw_trace,draw_labels);
@@ -228,6 +229,91 @@ class Graph {
             this.ns[a_key].size0=Number(new_size0);
 	    this.ns[a_key].size1=Number(new_size1);
         }
+    }
+    /**
+    * Compute per-node label offsets based on neighbor directions.
+    * Places each label away from the densest cluster of edges.
+    * Called periodically (not every frame) to keep CPU cost low.
+    */
+    updateLabelPositions() {
+	const MARGIN = 8; // extra pixels beyond node size
+	const keys = Object.keys(this.ns);
+	const n = keys.length;
+	if (n === 0) return;
+
+	// Phase 1: compute ideal offset direction for each node
+	for (let i = 0; i < n; i++) {
+	    const key = keys[i];
+	    const node = this.ns[key];
+	    const neighbors = this.adj[key];
+	    let avg_dx = 0, avg_dy = 0;
+
+	    if (neighbors && neighbors.length > 0) {
+		for (const j of neighbors) {
+		    const other = this.ns[j];
+		    if (!other) continue;
+		    const dx = other.x - node.x;
+		    const dy = other.y - node.y;
+		    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+		    avg_dx += dx / dist;
+		    avg_dy += dy / dist;
+		}
+		// Normalize average direction
+		const mag = Math.sqrt(avg_dx * avg_dx + avg_dy * avg_dy) || 1;
+		avg_dx /= mag;
+		avg_dy /= mag;
+		// Place label in opposite direction
+		const offset_dist = node.size0 + MARGIN;
+		node.label_dx = -avg_dx * offset_dist;
+		node.label_dy = -avg_dy * offset_dist;
+	    } else {
+		// No neighbors: default to upper-right
+		const offset_dist = node.size0 + MARGIN;
+		node.label_dx = offset_dist * 0.7;
+		node.label_dy = -offset_dist * 0.7;
+	    }
+
+	    // Set textAlign based on horizontal direction
+	    if (node.label_dx < -2) {
+		node.label_align = 'end';
+	    } else if (node.label_dx > 2) {
+		node.label_align = 'start';
+	    } else {
+		node.label_align = 'center';
+	    }
+	}
+
+	// Phase 2: simple overlap nudge (2 iterations max)
+	// Approximate label bounding box as 50x14 pixels
+	const LBL_W = 50, LBL_H = 14;
+	for (let iter = 0; iter < 2; iter++) {
+	    for (let i = 0; i < n; i++) {
+		const ni = this.ns[keys[i]];
+		const ax = ni.x + ni.label_dx;
+		const ay = ni.y + ni.label_dy;
+		for (let j = i + 1; j < n; j++) {
+		    const nj = this.ns[keys[j]];
+		    const bx = nj.x + nj.label_dx;
+		    const by = nj.y + nj.label_dy;
+		    // Check overlap (AABB)
+		    const ox = LBL_W - Math.abs(ax - bx);
+		    const oy = LBL_H - Math.abs(ay - by);
+		    if (ox > 0 && oy > 0) {
+			// Push apart along smaller overlap axis
+			const push = 0.5;
+			if (ox < oy) {
+			    const sign = (ax < bx) ? -1 : 1;
+			    ni.label_dx += sign * ox * push;
+			    nj.label_dx -= sign * ox * push;
+			} else {
+			    const sign = (ay < by) ? -1 : 1;
+			    ni.label_dy += sign * oy * push;
+			    nj.label_dy -= sign * oy * push;
+			}
+		    }
+		}
+	    }
+	}
     }
     unvisit_nodes() {
 	for (let a_key in this.ns)

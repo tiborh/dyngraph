@@ -70,6 +70,9 @@ class Node {
         this.fy = 0;      // Accumulated y-axis force
 	this.visited = false;
 	this.group = null;  // Group name (for group-based styling)
+	this.label_dx = 0;  // Auto-computed label x offset
+	this.label_dy = 0;  // Auto-computed label y offset
+	this.label_align = 'start'; // Auto-computed textAlign
     }
 
     /**
@@ -224,9 +227,10 @@ class Node {
     * @param {object} p - Drawing parameters
     * @param {boolean} draw_trace - Whether to use trace colors
     * @param {boolean} draw_labels - Whether to draw node label/name
+    * @param {boolean} auto_labels - Whether to use per-node auto offsets
     * @static
     */
-    static draw(n,p,draw_trace,draw_labels) {
+    static draw(n,p,draw_trace,draw_labels,auto_labels) {
 	if (!p.fill_colour)
 	    n.c2d.fillStyle = draw_trace ? n.tracefillcolour : n.fillcolour;
     	if (!p.outline_col)
@@ -249,7 +253,14 @@ class Node {
 	    n.c2d.stroke();
 	if (draw_labels) {
 	    n.c2d.fillStyle=n.fontcolour;
-	    n.c2d.fillText(n.name, n.x + node_params.label_offset_x, n.y + node_params.label_offset_y);
+	    if (auto_labels) {
+		const savedAlign = n.c2d.textAlign;
+		n.c2d.textAlign = n.label_align;
+		n.c2d.fillText(n.name, n.x + n.label_dx, n.y + n.label_dy);
+		n.c2d.textAlign = savedAlign;
+	    } else {
+		n.c2d.fillText(n.name, n.x + node_params.label_offset_x, n.y + node_params.label_offset_y);
+	    }
 	}
     }
 

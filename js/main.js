@@ -136,6 +136,9 @@ let safe_colour_index = 0;
 let graph_algorithm = "r2r";
 let animate;
 let first_step;
+let label_mode = 'manual'; // 'manual' or 'auto'
+let label_frame_counter = 0;
+const LABEL_UPDATE_INTERVAL = 30; // recalculate every N frames
 let scatter = 0.8;
 const scat = {
     x: 800,
@@ -749,18 +752,27 @@ function col_off_change(sel_id) {
 function anim_step() {
     if(!first_step) {
 	if(tracer.checked)
-	    g.draw(off_pairs,true,false);
+	    g.draw(off_pairs,true,false,false);
 	g.calc_forces();
 	g.step();
 	if(!tracer.checked)
 	    clear_canvas();
     }
-    g.draw(off_pairs,false,labelling.checked);
+    const auto = (label_mode === 'auto');
+    g.draw(off_pairs,false,labelling.checked,auto);
 }
 function animPhase() {
     anim_step();
     if (animate) {
 	first_step = false;
+	// Periodically recompute label positions in auto mode
+	if (label_mode === 'auto') {
+	    label_frame_counter++;
+	    if (label_frame_counter >= LABEL_UPDATE_INTERVAL) {
+		label_frame_counter = 0;
+		g.updateLabelPositions();
+	    }
+	}
         setTimeout(animPhase, node_params.anim_timeout);
     }
 }

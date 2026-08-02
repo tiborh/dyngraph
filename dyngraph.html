@@ -397,6 +397,13 @@
 	      </table></td>
 	    </tr>
 	    <tr>
+	      <td><label>Label Place</label></td>
+	      <td><select class="button2" id="sel_label_mode">
+		  <option value="manual" selected>manual</option>
+		  <option value="auto">auto</option>
+	      </select></td>
+	    </tr>
+	    <tr>
 	      <td><label>Label Align</label></td>
 	      <td><select class="button2" id="sel_label_align">
 		  <option value="start" selected>start</option>
@@ -956,6 +963,14 @@
 	    //console.log("set to: " + this[this.selectedIndex].value);
 	    c2d.textAlign = this[this.selectedIndex].value;
 	});
+	const sel_label_mode = document.getElementById("sel_label_mode");
+	sel_label_mode.addEventListener("change",function(){
+	    label_mode = this.value;
+	    if (label_mode === 'auto') {
+		label_frame_counter = 0;
+		g.updateLabelPositions();
+	    }
+	});
 	const sel_label_baseline = document.getElementById("sel_label_baseline");
 	sel_label_baseline.addEventListener("change",function(){
 	    //console.log("set to: " + this[this.selectedIndex].value);
@@ -1077,6 +1092,10 @@
 	    if (contents.labelbaseline_index !== undefined) {
 		sel_label_baseline.selectedIndex = contents.labelbaseline_index;
 	    }
+	    if (contents.labelmode_index !== undefined) {
+		sel_label_mode.selectedIndex = contents.labelmode_index;
+		sel_label_mode.dispatchEvent(new Event("change",{bubbles:true}));
+	    }
 	    if (contents.tracing !== undefined) {
 		tracer.checked = contents.tracing;
 		tracer.dispatchEvent(new Event("change",{bubbles:true}));
@@ -1092,9 +1111,9 @@
 		}
 	    }
 	    config();
-	    restart();
 	    sel_label_align.dispatchEvent(new Event("change",{bubbles:true}));
 	    sel_label_baseline.dispatchEvent(new Event("change",{bubbles:true}));
+	    restart();
 	};
 	// when it changes (ie: user selects a file)
 	infn.addEventListener("change", function() {
@@ -1147,6 +1166,7 @@
 	    out_val.nodeplace_index = sel_nodeplace.selectedIndex;
 	    out_val.labelalign_index = sel_label_align.selectedIndex;
 	    out_val.labelbaseline_index = sel_label_baseline.selectedIndex;
+	    out_val.labelmode_index = sel_label_mode.selectedIndex;
 	    // Export group styles if any exist
 	    out_val.group_styles = group_styles;
 	    
