@@ -32,8 +32,8 @@ The grouping of the nodes peaked my interest. For this reason, simple controls h
 
 ## Limitations ##
 
-1. Works well with Chromium engine.
-    * Firefox compatibility was improved (form sizing, disabled-state styling, event bubbling fixes). Run the Playwright e2e smoke tests to verify in your environment.
+1. Works well with Chromium engine and Firefox.
+    * Firefox compatibility is verified by 30 Playwright e2e tests. Run `npm run test:e2e` to confirm in your environment.
 
 ## Testing ##
 
