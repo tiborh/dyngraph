@@ -10,10 +10,10 @@ This ROADMAP summarizes planned work and priorities for the dyngraph project. Fo
 - Unit tests (Mocha + Chai) for core graph logic
 - Playwright e2e smoke tests (Firefox) and Playwright config
 - GitHub Actions CI to run unit and e2e tests with caching
+- fix-firefox-compat: Firefox compatibility verified (30 e2e tests passing)
 
 ## Next (high priority)
 - fix-label-placement: Improve label formatting & placement (high effort)
-- fix-firefox-compat: Finalize Firefox compatibility checks and polish (medium effort)
 
 ## Medium-term
 - perf-large-graphs: Optimize physics (spatial partitioning, Barnes-Hut, etc.)

@@ -5,7 +5,7 @@ This document exposes the improvement_ideas tracked during development. It is a 
 | id | title | priority | effort | status | description |
 | --- | --- | --- | --- | --- | --- |
 | fix-label-placement | Improve Label Formatting & Placement | high | high | pending | Automate label placement logic; current manual-only approach produces ugly results. Also fix label repositioning on settings restore. |
-| fix-firefox-compat | Fix Firefox Compatibility Issues | high | medium | pending | Resolve control layout breakage and unreliable button inactivation in Firefox. Currently only ~70% functional. |
+| fix-firefox-compat | Fix Firefox Compatibility Issues | high | medium | done | Resolved: label unwrapping, pointer-events on disabled controls, event bubbling, moz-range-thumb styling. 30 e2e tests pass in Firefox. |
 | standalone-build | Create Standalone Offline Build | low | high | pending | Bundle as desktop app (Electron) or progressive web app for offline use and easier distribution. |
 | interactive-tutorials | Interactive Tutorials/Presets | low | high | pending | Add guided tours or preset configurations for common use cases (social networks, molecular structures, etc.). |
 | settings-versioning | Version & Export Settings | low | low | pending | Allow explicit export/import of graph configurations and physics parameters; not just browser localStorage. Add version info to saved configs. |

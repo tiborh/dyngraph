@@ -72,7 +72,7 @@ Physics forces applied in `Node` class:
 
 ### Browser Compatibility
 - **Primary:** Chromium-based browsers (full functionality)
-- **Secondary:** Firefox (~70% functionality; layout issues with controls, unreliable button states)
+- **Secondary:** Firefox (fully functional; 30 e2e tests passing)
 - **Not recommended:** Safari, IE
 
 ### Known Limitations
