@@ -30,7 +30,7 @@ class Graph {
 	this.adj[this.counter] = [];
 	++this.counter;
 	++this.nu_vertices;
-        return this.ns.length-1;
+        return this.counter - 1;
     }
     /**
     * Remove a vertex by name.
@@ -204,19 +204,19 @@ class Graph {
     * @param {string} dir - Direction: 'up', 'down', 'left', 'right'
     */
     nudge(dir) {
-	for(let a_key in g.ns) {
+	for(let a_key in this.ns) {
 	    switch(dir) {
 	    case 'up':
-		g.ns[a_key].move_up();
+		this.ns[a_key].move_up();
 		break;
 	    case 'down':
-		g.ns[a_key].move_down();
+		this.ns[a_key].move_down();
 		break;
 	    case 'left':
-		g.ns[a_key].move_left();
+		this.ns[a_key].move_left();
 		break;
 	    case 'right':
-		g.ns[a_key].move_right();
+		this.ns[a_key].move_right();
 		break;
 	    default:
 		console.log("Undefined direction: " + dir);

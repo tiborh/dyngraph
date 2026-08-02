@@ -442,62 +442,62 @@
 		<table>
 		  <tr>
 		    <td>Max Link Threshold</td>
-		    <td><input type="range" min="0" max="200" step="10" class="slider" id="slider_link_max_length")></td>
+		    <td><input type="range" min="0" max="200" step="10" class="slider" id="slider_link_max_length"></td>
 		    <td class="right"><span id="span_link_max_length"></span></td>
 		  </tr>
 		  <tr>
 		    <td>Min Link Threshold</td>
-		    <td><input type="range" min="0" max="200" step="10" class="slider" id="slider_link_min_length")></td>
+		    <td><input type="range" min="0" max="200" step="10" class="slider" id="slider_link_min_length"></td>
 		    <td class="right"><span id="span_link_min_length"></span></td>
 		  </tr>
 		  <tr>
 		    <td>Distance Modifier</td>
-		    <td><input type="range" min="0" max="600" step="10" class="slider" id="slider_dist_modifier")></td>
+		    <td><input type="range" min="0" max="600" step="10" class="slider" id="slider_dist_modifier"></td>
 		    <td class="right"><span id="span_dist_modifier"></span></td>
 		  </tr>
 		  <tr>
 		    <td>Large Distance Divisor</td>
-		    <td><input type="range" min="0" max="200" step="10" class="slider" id="slider_large_dist_div")></td>
+		    <td><input type="range" min="0" max="200" step="10" class="slider" id="slider_large_dist_div"></td>
 		    <td class="right"><span id="span_large_dist_div"></span></td>
 		  </tr>
 		  <tr>
 		    <td>Small Distance Divisor</td>
-		    <td><input type="range" min="0" max="200" step="10" class="slider" id="slider_small_dist_div")></td>
+		    <td><input type="range" min="0" max="200" step="10" class="slider" id="slider_small_dist_div"></td>
 		    <td class="right"><span id="span_small_dist_div"></span></td>
 		  </tr>
 		  <tr>
 		    <td>Distance Threshold</td>
-		    <td><input type="range" min="0" max="300" step="10" class="slider" id="slider_dist_threshold")></td>
+		    <td><input type="range" min="0" max="300" step="10" class="slider" id="slider_dist_threshold"></td>
 		    <td class="right"><span id="span_dist_threshold"></span></td>
 		  </tr>
 		  <tr>
 		    <td>fx Multiplier</td>
-		    <td><input type="range" min="0" max="10" step="1" class="slider" id="slider_fx_multip")></td>
+		    <td><input type="range" min="0" max="10" step="1" class="slider" id="slider_fx_multip"></td>
 		    <td class="right"><span id="span_fx_multip"></span></td>
 		  </tr>
 		  <tr>
 		    <td>fy Multiplier</td>
-		    <td><input type="range" min="0" max="10" step="1" class="slider" id="slider_fy_multip")></td>
+		    <td><input type="range" min="0" max="10" step="1" class="slider" id="slider_fy_multip"></td>
 		    <td class="right"><span id="span_fy_multip"></span></td>
 		  </tr>
 		  <tr>
 		    <td>Nudge size</td>
-		    <td><input type="range" min="1" max="20" step="1" class="slider" id="slider_nudge_size")></td>
+		    <td><input type="range" min="1" max="20" step="1" class="slider" id="slider_nudge_size"></td>
 		    <td class="right"><span id="span_nudge_size"></span></td>
 		  </tr>
 		  <tr>
 		    <td>Label Offset (x)</td>
-		    <td><input type="range" min="-100" max="100" step="1" class="slider" id="slider_label_offset_x")></td>
+		    <td><input type="range" min="-100" max="100" step="1" class="slider" id="slider_label_offset_x"></td>
 		    <td class="right"><span id="span_label_offset_x"></span></td>
 		  </tr>
 		  <tr>
 		    <td>Label Offset (y)</td>
-		    <td><input type="range" min="-100" max="100" step="1" class="slider" id="slider_label_offset_y")></td>
+		    <td><input type="range" min="-100" max="100" step="1" class="slider" id="slider_label_offset_y"></td>
 		    <td class="right"><span id="span_label_offset_y"></span></td>
 		  </tr>
 		  <tr>
 		    <td>Animation Timeout</td>
-		    <td><input type="range" min="0" max="100" step="1" class="slider" id="slider_anim_timeout")></td>
+		    <td><input type="range" min="0" max="100" step="1" class="slider" id="slider_anim_timeout"></td>
 		    <td class="right"><span id="span_anim_timeout"></span></td>
 		  </tr>
 		</table>
@@ -1002,7 +1002,7 @@
 		    btn_pause_conti.dispatchEvent(new Event("click",{bubbles:true}));
 		    multip_saved.x = node_params.fx_multip;
 		    node_params.fx_multip = 0;
-		    multip_saved.x = node_params.fy_multip;
+		    multip_saved.y = node_params.fy_multip;
 		    node_params.fy_multip = 0;
 		}
 		start(c2d,
@@ -1237,8 +1237,8 @@
 	function toggle(param) {
 	    let ret_status;
 	    if(param.checked) {
-		ret_param.checked = false;
-		status = false;
+		param.checked = false;
+		ret_status = false;
 	    } else {
 		param.checked = true;
 		ret_status = true;
