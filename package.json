@@ -9,13 +9,16 @@
     "serve:local": "node tools/run-local-server.js"
   },
   "devDependencies": {
-    "mocha": "^10.2.0",
-    "chai": "^4.3.7",
     "@playwright/test": "^1.44.0",
+    "chai": "^4.3.7",
+    "mocha": "^10.2.0",
     "serialize-javascript": "^7.0.6"
   },
   "postinstall": "npx playwright install --with-deps",
   "overrides": {
     "serialize-javascript": "^7.0.6"
+  },
+  "dependencies": {
+    "seedrandom": "3.0.5"
   }
 }
