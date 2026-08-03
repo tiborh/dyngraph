@@ -1244,3 +1244,70 @@ function increase_connectedness() {
     }
     sync_nu_edges();
 }
+
+/**
+ * Force-balance presets for different graph topologies.
+ * Each preset defines physics parameters tuned for specific graph structures.
+ * Only overrides force-related params; leaves label/nudge/timeout untouched.
+ */
+const force_presets = {
+    "default": {
+	label: "Default",
+	link_max_length: 30, link_min_length: 20, dist_modifier: 10,
+	large_dist_div: 40, small_dist_div: 30, dist_threshold: 100,
+	fx_multip: 1, fy_multip: 1
+    },
+    "tight": {
+	label: "Tight Clusters",
+	link_max_length: 20, link_min_length: 10, dist_modifier: 5,
+	large_dist_div: 20, small_dist_div: 40, dist_threshold: 60,
+	fx_multip: 1, fy_multip: 1
+    },
+    "spread": {
+	label: "Spread Out",
+	link_max_length: 80, link_min_length: 50, dist_modifier: 30,
+	large_dist_div: 60, small_dist_div: 20, dist_threshold: 200,
+	fx_multip: 1, fy_multip: 1
+    },
+    "tree": {
+	label: "Tree / Hierarchical",
+	link_max_length: 60, link_min_length: 40, dist_modifier: 20,
+	large_dist_div: 30, small_dist_div: 20, dist_threshold: 150,
+	fx_multip: 1, fy_multip: 2
+    },
+    "ring": {
+	label: "Ring / Circular",
+	link_max_length: 40, link_min_length: 30, dist_modifier: 15,
+	large_dist_div: 50, small_dist_div: 50, dist_threshold: 120,
+	fx_multip: 1, fy_multip: 1
+    },
+    "dense": {
+	label: "Dense / Complete",
+	link_max_length: 15, link_min_length: 10, dist_modifier: 5,
+	large_dist_div: 10, small_dist_div: 50, dist_threshold: 50,
+	fx_multip: 1, fy_multip: 1
+    },
+    "slow": {
+	label: "Slow & Stable",
+	link_max_length: 30, link_min_length: 20, dist_modifier: 10,
+	large_dist_div: 80, small_dist_div: 60, dist_threshold: 100,
+	fx_multip: 1, fy_multip: 1
+    }
+};
+
+/**
+ * Apply a force-balance preset by name.
+ * Updates node_params and syncs all sliders.
+ * @param {string} presetName - Key from force_presets
+ */
+function apply_force_preset(presetName) {
+    const preset = force_presets[presetName];
+    if (!preset) return;
+    for (const key in preset) {
+	if (key === 'label') continue;
+	if (node_params[key] !== undefined) {
+	    node_params[key] = preset[key];
+	}
+    }
+    update_node_params();
+}

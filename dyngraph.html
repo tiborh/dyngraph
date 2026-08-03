@@ -445,6 +445,18 @@
   <td><input id="cb_mobile_ui" type="checkbox" onchange="set_mobile_ui(this.checked)" /></td>
 </tr>
 	    <tr>
+	      <td><label>Force Preset</label></td>
+	      <td><select class="button2" id="sel_force_preset">
+		  <option value="default" selected>Default</option>
+		  <option value="tight">Tight Clusters</option>
+		  <option value="spread">Spread Out</option>
+		  <option value="tree">Tree / Hierarchical</option>
+		  <option value="ring">Ring / Circular</option>
+		  <option value="dense">Dense / Complete</option>
+		  <option value="slow">Slow &amp; Stable</option>
+	      </select></td>
+	    </tr>
+	    <tr>
 	      <td colspan="2">
 		<table>
 		  <tr>
@@ -1077,6 +1089,10 @@
 		map_node_params[it][1].innerHTML = node_params[it];
 	    }
 	}
+	const sel_force_preset = document.getElementById("sel_force_preset");
+	sel_force_preset.addEventListener("change", function() {
+	    apply_force_preset(this.value);
+	});
 	function restart() {
 	    const multip_saved = {
 		x: node_params.fx_multip,
