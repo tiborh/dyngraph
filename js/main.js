@@ -1073,6 +1073,8 @@ function bypass_articulations() {
  */
 // Track which degrees have their node list expanded
 const _stats_expanded = new Set();
+let _stats_last_interaction = 0; // timestamp of last button click in stats table
+const _STATS_DEBOUNCE_MS = 600; // skip auto-refresh for this long after interaction
 
 function show_node_stats() {
     const div = document.getElementById("div_node_stats");
@@ -1118,6 +1120,7 @@ let _degree_nodes_cache = {};
  * List node names for a given degree in the table cell.
  */
 function list_nodes_for_degree(deg, cellId) {
+    _stats_last_interaction = Date.now();
     _stats_expanded.add(deg);
     // Rebuild from current graph state
     const nodes = [];
@@ -1133,6 +1136,7 @@ function list_nodes_for_degree(deg, cellId) {
  * Highlight nodes with a given degree using the overlay ring system.
  */
 function highlight_nodes_for_degree(deg) {
+    _stats_last_interaction = Date.now();
     // Use cached list if available, otherwise compute
     if (!_degree_nodes_cache[deg]) {
 	const nodes = [];
@@ -1149,11 +1153,16 @@ function highlight_nodes_for_degree(deg) {
 
 /**
  * Update node stats if the "keep updated" checkbox is ticked.
+ * Skips refresh briefly after user clicks a button in the table
+ * to prevent DOM replacement from swallowing click events.
  * Called from the animation loop.
  */
 function update_node_stats_if_live() {
     const cb = document.getElementById("cb_node_stats_live");
-    if (cb && cb.checked) show_node_stats();
+    if (cb && cb.checked) {
+	if (Date.now() - _stats_last_interaction < _STATS_DEBOUNCE_MS) return;
+	show_node_stats();
+    }
 }
 
 /**
