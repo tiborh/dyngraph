@@ -776,3 +776,46 @@ function animPhase() {
         setTimeout(animPhase, node_params.anim_timeout);
     }
 }
+
+/**
+ * Show Minimum Spanning Tree overlay using Kruskal's algorithm.
+ * Edges are weighted by current Euclidean distance between nodes.
+ */
+function show_mst() {
+    const mst_edges = kruskal_mst(g);
+    g.edges_overlay = mst_edges;
+    g.edges_overlay_col = "#00cc00";
+    g.highlight_nodes = [];
+}
+
+/**
+ * Show bridges (cut edges) and articulation points (cut vertices).
+ * Bridges are highlighted as edge overlay; articulations as node rings.
+ */
+function show_bridges() {
+    const result = find_bridges_and_articulations(g);
+    g.edges_overlay = result.bridges;
+    g.edges_overlay_col = "#ff6600";
+    g.highlight_nodes = result.articulations;
+    g.highlight_nodes_col = "#ff0000";
+}
+
+/**
+ * Show Dijkstra's shortest path between two selected nodes.
+ * Uses current physical (Euclidean) distance as edge weights.
+ */
+function hilight_dijkstra_path(sel1="sel_node_list1",sel2="sel_node_list2") {
+    const src_ind = adj_index_from_selbox_id(sel1);
+    const trg_ind = adj_index_from_selbox_id(sel2);
+    const result = dijkstra(g, src_ind);
+    const path = dijkstra_path(result.prev, trg_ind);
+    const span = document.getElementById("sp_dijkstra_dist");
+    if (path) {
+	g.path = path;
+	g.path_col = "#0066ff";
+	const totalDist = result.dist[trg_ind];
+	span.innerHTML = "dist: " + totalDist.toFixed(1);
+    } else {
+	span.innerHTML = "no path";
+    }
+}

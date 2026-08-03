@@ -66,6 +66,10 @@ class Graph {
 	this.adjSet = {};    // adjacency sets: index -> Set (O(1) lookup)
 	this.path = [];      // vertex indices for path visualization
 	this.path_col = "#ff00ff";
+	this.edges_overlay = [];  // [[v1,v2],...] edge pairs to highlight
+	this.edges_overlay_col = "#00ff00";
+	this.highlight_nodes = []; // vertex indices to highlight
+	this.highlight_nodes_col = "#ff0000";
     }
     /**
     * Add a vertex (node) to the graph.
@@ -202,6 +206,46 @@ class Graph {
 	}
     }
     /**
+    * Draw highlighted edge overlay (for MST, bridges, etc.).
+    * @private
+    */
+    draw_edges_overlay() {
+	if (this.edges_overlay.length === 0) return;
+	const ctx = this.ns[Object.keys(this.ns)[0]].c2d;
+	const savedWidth = ctx.lineWidth;
+	ctx.lineWidth = 3;
+	ctx.strokeStyle = this.edges_overlay_col;
+	for (const [u, v] of this.edges_overlay) {
+	    const n0 = this.ns[u], n1 = this.ns[v];
+	    if (!n0 || !n1) continue;
+	    ctx.beginPath();
+	    ctx.moveTo(n0.x, n0.y);
+	    ctx.lineTo(n1.x, n1.y);
+	    ctx.stroke();
+	}
+	ctx.lineWidth = savedWidth;
+    }
+    /**
+    * Draw highlighted nodes (for articulation points, etc.).
+    * Draws a ring around each highlighted node.
+    * @private
+    */
+    draw_highlight_nodes() {
+	if (this.highlight_nodes.length === 0) return;
+	const ctx = this.ns[Object.keys(this.ns)[0]].c2d;
+	const savedWidth = ctx.lineWidth;
+	ctx.lineWidth = 3;
+	ctx.strokeStyle = this.highlight_nodes_col;
+	for (const idx of this.highlight_nodes) {
+	    const n = this.ns[idx];
+	    if (!n) continue;
+	    ctx.beginPath();
+	    ctx.arc(n.x, n.y, n.size0 + 5, 0, 2 * Math.PI);
+	    ctx.stroke();
+	}
+	ctx.lineWidth = savedWidth;
+    }
+    /**
     * Draw all nodes and edges to the canvas.
     * @param {object} params - Node drawing parameters (from node_params)
     * @param {boolean} draw_trace - Whether to draw trace lines
@@ -216,6 +260,8 @@ class Graph {
 		    this.constructor.draw_edge(this.ns[i],this.ns[j],params,draw_trace,draw_labels);
         }
 	this.draw_path();
+	this.draw_edges_overlay();
+	this.draw_highlight_nodes();
     }
     /**
     * Calculate physics forces for all nodes (attraction/repulsion).

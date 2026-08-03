@@ -600,6 +600,14 @@
 	      <td></td>
 	    </tr>
 	    <tr>
+	      <td><div class="label-inline">Weighted path (distance)?</div> <input type="button" id="btn_dijkstra" value="Dijkstra" onclick="hilight_dijkstra_path();"/> <span id="sp_dijkstra_dist"></span></td>
+	      <td></td>
+	    </tr>
+	    <tr>
+	      <td><div class="label-inline"><input type="button" id="btn_mst" value="Show MST" onclick="show_mst();"/> <input type="button" id="btn_bridges" value="Bridges &amp; Articulations" onclick="show_bridges();"/> <input type="button" id="btn_clear_overlay" value="Clear Overlay" onclick="g.edges_overlay=[];g.highlight_nodes=[];"/></div></td>
+	      <td></td>
+	    </tr>
+	    <tr>
 	      <td><div class="label-inline">Add node with name <input type="text" id="inp_new_node_name" onchange="add_new_node(this,'cb_hilite_added')" size="10" /> (highlight: <input type="checkbox" class="cb" id="cb_hilite_added" checked>)</div></td>
 	      <td></td>
 	    </tr>
