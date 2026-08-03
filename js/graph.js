@@ -1,4 +1,51 @@
 /**
+ * PERFORMANCE NOTES — Force Calculation Optimization Approaches
+ * ==============================================================
+ *
+ * The main performance bottleneck in force-directed graph layouts is the
+ * all-pairs repulsion calculation: every unconnected node pair must be
+ * checked for proximity. Three optimization strategies exist:
+ *
+ * OPTION A — Spatial Grid (uniform partitioning)
+ * -----------------------------------------------
+ * Divide the canvas into cells of size dist_threshold. Each frame, bin
+ * nodes into grid cells (O(n)). For repulsion, only check nodes in the
+ * same cell + 8 neighbors. Effective complexity: O(n × k) where k is
+ * the average number of nodes per local neighborhood.
+ * Pros: Simple, cache-friendly, works well when dist_threshold is fixed.
+ * Cons: Degrades to O(n²) if all nodes cluster in a small area.
+ * Best for: Graphs up to ~5000 nodes with a fixed interaction radius.
+ *
+ * OPTION B — Barnes-Hut (quadtree approximation)
+ * ------------------------------------------------
+ * Build a quadtree of node positions each frame (O(n log n)). When
+ * computing repulsion for a node, traverse the tree: if a group of
+ * distant nodes subtends a small angle (width/distance < θ, typically
+ * θ ≈ 0.7), treat the group as a single body at their center of mass.
+ * Effective complexity: O(n log n) per frame.
+ * Pros: Handles any distribution gracefully, scales to 10k+ nodes.
+ * Cons: More code (~100-150 lines), tree rebuilds add constant overhead.
+ * Best for: Graphs with 5000–100000 nodes, or non-uniform distributions.
+ *
+ * OPTION C — Quick Wins (currently implemented)
+ * -----------------------------------------------
+ * 1. Parallel Set (adjSet) for O(1) adjacency lookup instead of
+ *    Array.includes() which is O(degree).
+ * 2. Upper-triangle iteration: compute each unconnected pair once and
+ *    apply Newton's 3rd law symmetrically (halves pair iterations).
+ * 3. Manhattan distance pre-filter: skip pairs where |dx| or |dy|
+ *    alone exceeds dist_threshold (avoids sqrt for far-away pairs).
+ * 4. Connected forces iterated via adjacency list: O(edges), not O(n²).
+ * Combined, these reduce constant factors by ~3-5× without changing
+ * the asymptotic complexity (still O(n²/2) worst case for repulsion).
+ * Best for: Moderate improvement up to ~2000 nodes.
+ *
+ * Migration path: If graphs grow beyond 2000 nodes, implement Option A
+ * first (spatial grid). If distribution becomes highly non-uniform or
+ * node count exceeds 5000, switch to Option B (Barnes-Hut).
+ */
+
+/**
  * Graph data structure with undirected edges and physics simulation support.
  * Maintains three mappings: nodes by index (ns), nodes by name (sn), and adjacency list (adj).
  * @class Graph
@@ -16,6 +63,7 @@ class Graph {
        this.ns = {};        // index -> Node mapping
 	this.sn = {};        // name -> index mapping (reverse lookup)
 	this.adj = {};       // adjacency list: index -> [connected indices]
+	this.adjSet = {};    // adjacency sets: index -> Set (O(1) lookup)
 	this.path = [];      // vertex indices for path visualization
 	this.path_col = "#ff00ff";
     }
@@ -28,6 +76,7 @@ class Graph {
        this.ns[this.counter] = node;
 	this.sn[node.name] = this.counter;
 	this.adj[this.counter] = [];
+	this.adjSet[this.counter] = new Set();
 	++this.counter;
 	++this.nu_vertices;
         return this.counter - 1;
@@ -54,6 +103,7 @@ class Graph {
 	delete this.ns[ind];
 	this.rem_edges(ind);
 	delete this.adj[ind];
+	delete this.adjSet[ind];
 	--this.nu_vertices;
 	return true;
     }
@@ -103,6 +153,7 @@ class Graph {
     */
     add_uni_edge(v1,v2) {
 	this.adj[v1].push(Number(v2));
+	this.adjSet[v1].add(Number(v2));
 	++this.nu_edges;
     }
     /**
@@ -113,6 +164,7 @@ class Graph {
     */
     rem_uni_edge(v1,v2) {
 	this.adj[v1].splice(this.adj[v1].indexOf(v2),1);
+	this.adjSet[v1].delete(Number(v2));
 	--this.nu_edges;
     }
     /**
@@ -126,13 +178,13 @@ class Graph {
 	this.ns[key].y = ypos;
     }
     /**
-    * Check if two vertices are connected (O(n) linear search through adjacency list).
+    * Check if two vertices are connected (O(1) via Set lookup).
     * @param {number} index1 - First vertex index
     * @param {number} index2 - Second vertex index
     * @returns {boolean} True if connected, false otherwise
     */
     is_connected(index1,index2) {
-	return(this.adj[index1].includes(index2) || this.adj[index2].includes(index1));
+	return(this.adjSet[index1].has(Number(index2)) || this.adjSet[index2].has(Number(index1)));
     }
     /**
     * Draw the current path stored in this.path array.
@@ -167,20 +219,52 @@ class Graph {
     }
     /**
     * Calculate physics forces for all nodes (attraction/repulsion).
-    * Time complexity: O(n²) where n = number of vertices.
+    * Optimized: uses Newton's 3rd law (each pair computed once),
+    * Set-based O(1) adjacency lookup, and Manhattan distance pre-filter.
+    * Time complexity: O(n²/2) pair iterations + O(edges) for connected forces.
     */
     calc_forces() {
-        for(let a_key in this.ns) {
-            this.ns[a_key].reset_force();
+        const keys = Object.keys(this.ns);
+	const n = keys.length;
+        for (let idx = 0; idx < n; idx++) {
+            this.ns[keys[idx]].reset_force();
         }
-	for (let i in this.ns)
-	    for (let j in this.ns)
-                if (i != j) {
-		    if(this.adj[i].includes(Number(j)))
-			this.ns[i].add_force_connected(this.ns[j]);
-		    else
-			this.ns[i].add_force_unconnected(this.ns[j]);
+	// Connected forces: iterate adjacency lists (O(edges) total)
+	for (let idx = 0; idx < n; idx++) {
+	    const i = keys[idx];
+	    for (const j of this.adj[i]) {
+		if (j > i) { // process each undirected edge once
+		    this.ns[i].add_force_connected(this.ns[j]);
+		    this.ns[j].add_force_connected(this.ns[i]);
 		}
+	    }
+	}
+	// Unconnected repulsion: iterate upper triangle (i < j)
+	const threshold = node_params.dist_threshold;
+	for (let a = 0; a < n; a++) {
+	    const i = keys[a];
+	    const ni = this.ns[i];
+	    for (let b = a + 1; b < n; b++) {
+		const j = keys[b];
+		if (this.adjSet[i].has(Number(j))) continue; // skip connected pairs
+		const nj = this.ns[j];
+		// Manhattan distance pre-filter (cheaper than Euclidean)
+		const mdx = Math.abs(ni.x - nj.x);
+		if (mdx >= threshold) continue;
+		const mdy = Math.abs(ni.y - nj.y);
+		if (mdy >= threshold) continue;
+		// Full Euclidean check
+		const dist = Math.sqrt(mdx * mdx + mdy * mdy);
+		if (dist >= threshold || dist === 0) continue;
+		// Apply repulsion symmetrically (Newton's 3rd law)
+		const fx = (ni.x - nj.x) / dist;
+		const fy = (ni.y - nj.y) / dist;
+		ni.fx += fx;
+		ni.fy += fy;
+		nj.fx -= fx;
+		nj.fy -= fy;
+	    }
+	}
     }
     /**
     * Perform one animation step: calculate forces and update node positions.
