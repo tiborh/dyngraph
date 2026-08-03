@@ -1075,6 +1075,7 @@ function bypass_articulations() {
 const _stats_expanded = new Set();
 let _stats_last_interaction = 0; // timestamp of last button click in stats table
 const _STATS_DEBOUNCE_MS = 600; // skip auto-refresh for this long after interaction
+let _stats_prev_signature = ""; // fingerprint to detect structural change
 
 function show_node_stats() {
     const div = document.getElementById("div_node_stats");
@@ -1088,29 +1089,48 @@ function show_node_stats() {
     _degree_nodes_cache = degreeNodes;
     // Sort degrees descending
     const degrees = Object.keys(degreeNodes).map(Number).sort((a, b) => b - a);
-    // Build table
-    let html = '<table style="border-collapse:collapse;margin-top:4px;">';
-    html += '<tr><th style="border:1px solid #888;padding:2px 6px;">Degree</th>';
-    html += '<th style="border:1px solid #888;padding:2px 6px;">Nodes</th>';
-    html += '<th style="border:1px solid #888;padding:2px 6px;">List Nodes</th>';
-    html += '<th style="border:1px solid #888;padding:2px 6px;">Node labels</th>';
-    html += '<th style="border:1px solid #888;padding:2px 6px;">Highlight</th></tr>';
-    for (const deg of degrees) {
-	const nodeList = degreeNodes[deg];
-	const rowId = 'stats_row_' + deg;
-	const labels = _stats_expanded.has(deg)
-	    ? nodeList.map(i => g.ns[i] ? g.ns[i].name : i).join(', ')
-	    : '';
-	html += '<tr>';
-	html += '<td style="border:1px solid #888;padding:2px 6px;text-align:right;">' + deg + '</td>';
-	html += '<td style="border:1px solid #888;padding:2px 6px;text-align:right;">' + nodeList.length + '</td>';
-	html += '<td style="border:1px solid #888;padding:2px 6px;text-align:center;"><input type="button" value="L" onclick="list_nodes_for_degree(' + deg + ',\'' + rowId + '\');" style="padding:0 4px;"/></td>';
-	html += '<td style="border:1px solid #888;padding:2px 6px;" id="' + rowId + '">' + labels + '</td>';
-	html += '<td style="border:1px solid #888;padding:2px 6px;text-align:center;"><input type="button" value="H" onclick="highlight_nodes_for_degree(' + deg + ');" style="padding:0 4px;"/></td>';
-	html += '</tr>';
+    // Signature: ordered list of "degree:count" to detect if rows need rebuilding
+    const signature = degrees.map(d => d + ':' + degreeNodes[d].length).join(',');
+
+    if (signature !== _stats_prev_signature) {
+	// Structure changed — full rebuild
+	_stats_prev_signature = signature;
+	let html = '<table style="border-collapse:collapse;margin-top:4px;">';
+	html += '<tr><th style="border:1px solid #888;padding:2px 6px;">Degree</th>';
+	html += '<th style="border:1px solid #888;padding:2px 6px;">Nodes</th>';
+	html += '<th style="border:1px solid #888;padding:2px 6px;">List Nodes</th>';
+	html += '<th style="border:1px solid #888;padding:2px 6px;">Node labels</th>';
+	html += '<th style="border:1px solid #888;padding:2px 6px;">Highlight</th></tr>';
+	for (const deg of degrees) {
+	    const nodeList = degreeNodes[deg];
+	    const rowId = 'stats_row_' + deg;
+	    const labels = _stats_expanded.has(deg)
+		? nodeList.map(i => g.ns[i] ? g.ns[i].name : i).join(', ')
+		: '';
+	    html += '<tr>';
+	    html += '<td style="border:1px solid #888;padding:2px 6px;text-align:right;">' + deg + '</td>';
+	    html += '<td style="border:1px solid #888;padding:2px 6px;text-align:right;" id="stats_count_' + deg + '">' + nodeList.length + '</td>';
+	    html += '<td style="border:1px solid #888;padding:2px 6px;text-align:center;"><input type="button" value="L" onclick="list_nodes_for_degree(' + deg + ',\'' + rowId + '\');" style="padding:0 4px;"/></td>';
+	    html += '<td style="border:1px solid #888;padding:2px 6px;" id="' + rowId + '">' + labels + '</td>';
+	    html += '<td style="border:1px solid #888;padding:2px 6px;text-align:center;"><input type="button" value="H" onclick="highlight_nodes_for_degree(' + deg + ');" style="padding:0 4px;"/></td>';
+	    html += '</tr>';
+	}
+	html += '</table>';
+	div.innerHTML = html;
+    } else {
+	// Structure unchanged — only update counts and expanded labels (no DOM rebuild)
+	for (const deg of degrees) {
+	    const countEl = document.getElementById('stats_count_' + deg);
+	    if (countEl) countEl.textContent = degreeNodes[deg].length;
+	    if (_stats_expanded.has(deg)) {
+		const rowEl = document.getElementById('stats_row_' + deg);
+		if (rowEl) {
+		    const names = degreeNodes[deg].map(i => g.ns[i] ? g.ns[i].name : i).join(', ');
+		    rowEl.textContent = names;
+		}
+	    }
+	}
     }
-    html += '</table>';
-    div.innerHTML = html;
 }
 
 /** Cached degree->nodes map for highlighting */
