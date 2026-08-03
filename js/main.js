@@ -1100,3 +1100,92 @@ function update_node_stats_if_live() {
     const cb = document.getElementById("cb_node_stats_live");
     if (cb && cb.checked) show_node_stats();
 }
+
+/**
+ * Reduce overconnectedness: remove one edge from each node that has the
+ * maximum degree. If "preserve connectivity" is checked, only remove
+ * edges that won't disconnect the graph (i.e. skip bridges).
+ */
+function reduce_overconnectedness() {
+    const preserve = document.getElementById("cb_preserve_conn").checked;
+    // Find maximum degree
+    let maxDeg = 0;
+    for (const i in g.adj) {
+	if (g.adj[i].length > maxDeg) maxDeg = g.adj[i].length;
+    }
+    if (maxDeg <= 0) return;
+
+    // Find bridges if preserving connectivity
+    let bridgeSet = null;
+    if (preserve) {
+	const result = find_bridges_and_articulations(g);
+	bridgeSet = new Set();
+	for (const [u, v] of result.bridges) {
+	    bridgeSet.add(u + "," + v);
+	    bridgeSet.add(v + "," + u);
+	}
+    }
+
+    // For each node with max degree, remove one edge
+    const processed = new Set(); // avoid removing same edge twice
+    for (const i in g.adj) {
+	if (g.adj[i].length !== maxDeg) continue;
+	const ni = Number(i);
+	let removed = false;
+	for (const j of [...g.adj[i]]) { // copy since we may mutate
+	    const key = ni + "," + j;
+	    if (processed.has(key)) continue;
+	    if (preserve && bridgeSet && bridgeSet.has(key)) continue;
+	    g.rem_edge(ni, j);
+	    processed.add(key);
+	    processed.add(j + "," + ni);
+	    removed = true;
+	    break;
+	}
+    }
+    sync_nu_edges();
+}
+
+/**
+ * Increase connectedness: add one edge to each node that has the minimum
+ * degree. Connects each min-degree node to a random node it's not already
+ * connected to. If the target also had minimum degree, that counts for
+ * both — no additional edge needed for the target.
+ */
+function increase_connectedness() {
+    // Find minimum degree
+    let minDeg = Infinity;
+    for (const i in g.adj) {
+	if (g.adj[i].length < minDeg) minDeg = g.adj[i].length;
+    }
+    if (minDeg === Infinity) return;
+
+    // Collect all nodes with min degree
+    const minNodes = [];
+    for (const i in g.adj) {
+	if (g.adj[i].length === minDeg) minNodes.push(Number(i));
+    }
+
+    const allKeys = Object.keys(g.ns).map(Number);
+    const handled = new Set();
+
+    for (const ni of minNodes) {
+	if (handled.has(ni)) continue;
+	// Find a node not already connected to ni
+	let target = null;
+	// Shuffle candidates to avoid always picking the same one
+	const candidates = allKeys.filter(k => k !== ni && !g.adjSet[ni].has(k));
+	if (candidates.length === 0) continue;
+	// Prefer another min-degree node if available
+	const minCandidates = candidates.filter(k => minNodes.includes(k) && !handled.has(k));
+	if (minCandidates.length > 0) {
+	    target = minCandidates[Math.floor(rng() * minCandidates.length)];
+	} else {
+	    target = candidates[Math.floor(rng() * candidates.length)];
+	}
+	g.add_edge(ni, target);
+	handled.add(ni);
+	handled.add(target); // counts for target too if it was min-degree
+    }
+    sync_nu_edges();
+}
