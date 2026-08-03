@@ -1,4 +1,3 @@
-numbers: more or less tolerable speed and view is for about 1000 nodes and
-	 1500 edges
-label: formatting and placement are manual only, and is often ugly
-label: placement after restoring saved settings is not good.
+numbers: practical limit ~2000 nodes with current optimizations
+	 (spatial grid or Barnes-Hut needed beyond that)
+label: auto placement available (manual mode still works as before)

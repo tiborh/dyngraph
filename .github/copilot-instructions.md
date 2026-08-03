@@ -19,7 +19,7 @@ DynGraph is a vanilla JavaScript web-based visualization of dynamic graphs using
 - **main.js**: Application logic, UI controls, color management, input parsing
 - **graph.js**: Graph class with vertex/edge operations and path-finding
 - **node.js**: Node physics simulation (forces, velocity, position updates)
-- **paths.js**: Graph algorithms (connectivity, pathfinding)
+- **paths.js**: Graph algorithms (BFS, MST, bridges/articulations, Dijkstra)
 
 ### Physics Simulation
 Node-level parameters in `node_params` object control simulation behavior:
@@ -66,8 +66,10 @@ Physics forces applied in `Node` class:
 - Path storage: `g.path` array holds vertex indices
 
 ### Performance Considerations
-- Practical limits: ~1000 nodes, ~1500 edges
-- Performance degrades with increased node count due to O(n²) repulsion calculations
+- Practical limits: ~2000 nodes with current optimizations
+- Repulsion uses O(n²/2) upper-triangle iteration with Manhattan pre-filter and Set-based adjacency lookup
+- Connected forces iterate adjacency lists: O(edges)
+- See graph.js header for documentation of spatial grid and Barnes-Hut approaches for scaling beyond 2000 nodes
 - Canvas rendering is main bottleneck; optimize by reducing animation rate or node count
 
 ### Browser Compatibility
@@ -76,9 +78,8 @@ Physics forces applied in `Node` class:
 - **Not recommended:** Safari, IE
 
 ### Known Limitations
-- Manual label placement; automated formatting is absent
-- Settings restoration doesn't correctly reposition labels
-- No seeded random number generation (Math.random() cannot be seeded)
+- No seeded random for initial node placement scatter (seedrandom is used for colour shuffling)
+- Edge weights are implicit (Euclidean distance); no explicit weight attribute on edges
 
 ## Working with the Code
 
