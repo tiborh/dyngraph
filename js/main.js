@@ -1401,6 +1401,21 @@ function shorten_chains_ui() {
 }
 
 /**
+ * Quake: apply a random displacement to all nodes to shake apart
+ * entangled or overlapping nodes that repulsion alone can't separate.
+ * The displacement magnitude is proportional to the nudge_size parameter.
+ * Nodes that are very close together get a stronger kick.
+ */
+function quake() {
+    const magnitude = node_params.nudge_size * 3;
+    for (const i in g.ns) {
+	const n = g.ns[i];
+	n.x += (rng() - 0.5) * magnitude * 2;
+	n.y += (rng() - 0.5) * magnitude * 2;
+    }
+}
+
+/**
  * Force-balance presets for different graph topologies.
  * Each preset defines physics parameters tuned for specific graph structures.
  * Only overrides force-related params; leaves label/nudge/timeout untouched.
