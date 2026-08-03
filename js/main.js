@@ -875,3 +875,62 @@ function augment_bridges() {
     // Highlight remaining state (should be no bridges)
     show_bridges();
 }
+
+/**
+ * Bypass articulations: add edges to eliminate all articulation points,
+ * making the graph 2-vertex-connected (biconnected). For each articulation
+ * point, connects pairs of its neighboring subtrees directly so the
+ * vertex is no longer a cut point. Repeats until none remain.
+ */
+function bypass_articulations() {
+    let iterations = 0;
+    const maxIter = 100; // safety cap
+    while (iterations < maxIter) {
+	const result = find_bridges_and_articulations(g);
+	if (result.articulations.length === 0) break;
+
+	for (const ap of result.articulations) {
+	    // Find the distinct subtrees reachable from ap's neighbors
+	    // without going through ap itself
+	    const neighbors = g.adj[ap];
+	    if (!neighbors || neighbors.length < 2) continue;
+
+	    const subtreeOf = {}; // neighbor -> subtree id
+	    let subtreeId = 0;
+	    const subtreeReps = []; // one representative node per subtree
+
+	    for (const nb of neighbors) {
+		if (subtreeOf[nb] !== undefined) continue;
+		// BFS from nb without crossing ap
+		const queue = [nb];
+		const visited = new Set([nb, ap]);
+		subtreeOf[nb] = subtreeId;
+		let rep = nb;
+		while (queue.length > 0) {
+		    const curr = queue.shift();
+		    for (const next of g.adj[curr]) {
+			if (visited.has(next)) continue;
+			visited.add(next);
+			// Mark neighbors of ap that end up in this subtree
+			if (neighbors.includes(next)) {
+			    subtreeOf[next] = subtreeId;
+			}
+			queue.push(next);
+			rep = next; // pick any node as representative
+		    }
+		}
+		subtreeReps.push(rep);
+		subtreeId++;
+	    }
+
+	    // Connect consecutive subtrees (chain them)
+	    for (let i = 1; i < subtreeReps.length; i++) {
+		g.add_edge(subtreeReps[i - 1], subtreeReps[i]);
+	    }
+	}
+	iterations++;
+    }
+    // Update UI edge count and show result
+    sync_nu_edges();
+    show_bridges();
+}
