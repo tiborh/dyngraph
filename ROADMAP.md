@@ -11,23 +11,23 @@ This ROADMAP summarizes planned work and priorities for the dyngraph project. Fo
 - Playwright e2e smoke tests (Firefox) and Playwright config
 - GitHub Actions CI to run unit and e2e tests with caching
 - fix-firefox-compat: Firefox compatibility verified (30 e2e tests passing)
+- fix-label-placement: Auto label placement with periodic recomputation
+- perf-large-graphs: Optimized calc_forces (Set lookup, Newton's 3rd law, Manhattan skip)
+- graph-algorithms: MST (Kruskal), bridges/articulations (Tarjan), Dijkstra (distance-weighted)
+- force-balance: 7 force-balance presets for different graph topologies
 
-## Next (high priority)
-- fix-label-placement: Improve label formatting & placement (high effort)
-
-## Medium-term
-- perf-large-graphs: Optimize physics (spatial partitioning, Barnes-Hut, etc.)
-- graph-algorithms: Add shortest path, MST, SCC and other algorithms
-- force-balance: Tune/default presets for stable layouts
+## Next (medium priority)
+- backlink-forces: Asymmetric forces on links vs backlinks (swirling patterns)
+- color-animations: Animated color changes (sine-function controlled)
+- improved-input-formats: Support GML/GraphML/DOT formats
+- node-size-by-group: Configurable node size/color by group (expand existing)
 
 ## Low priority / Nice-to-have
-- node-size-by-group: Allow group-driven size/color
-- color-animations: Add animated color schemes
-- improved-input-formats: Support GML/GraphML/DOT
-- interactive-tutorials and standalone builds
+- safari-support: Test and fix Safari-specific issues
+- interactive-tutorials: Guided tours/presets for common use cases
+- standalone-build: Bundle as Electron/PWA for offline use
 
 ## How to get involved
 - See IMPROVEMENT_IDEAS.md for the canonical list of ideas and their IDs.
 - Open issues referencing idea IDs for discussion or claim them via PRs.
 - For development guidance (file layout, testing, and running the app) see .github/copilot-instructions.md.
-
