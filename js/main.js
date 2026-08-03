@@ -819,3 +819,57 @@ function hilight_dijkstra_path(sel1="sel_node_list1",sel2="sel_node_list2") {
 	span.innerHTML = "no path";
     }
 }
+
+/**
+ * Augment bridges: add edges to eliminate all bridges, making the graph
+ * 2-edge-connected. For each bridge (u,v), finds leaf nodes in the
+ * subtrees on each side and connects them with a new edge.
+ * Repeats until no bridges remain (handles cascading bridges).
+ */
+function augment_bridges() {
+    let iterations = 0;
+    const maxIter = 100; // safety cap
+    while (iterations < maxIter) {
+	const result = find_bridges_and_articulations(g);
+	if (result.bridges.length === 0) break;
+
+	for (const [u, v] of result.bridges) {
+	    // Find the two components created by conceptually removing (u,v)
+	    // BFS from u without crossing (u,v)
+	    const sideU = new Set();
+	    const queueU = [u];
+	    sideU.add(u);
+	    while (queueU.length > 0) {
+		const curr = queueU.shift();
+		for (const nb of g.adj[curr]) {
+		    if (sideU.has(nb)) continue;
+		    // Don't cross the bridge
+		    if ((curr === u && nb === v) || (curr === v && nb === u)) continue;
+		    sideU.add(nb);
+		    queueU.push(nb);
+		}
+	    }
+	    // sideV = everything not in sideU (that is reachable)
+	    const sideV = new Set();
+	    for (const k of Object.keys(g.ns).map(Number)) {
+		if (!sideU.has(k)) sideV.add(k);
+	    }
+	    if (sideV.size === 0) continue;
+
+	    // Pick a node from each side (prefer one that isn't the bridge endpoint)
+	    let pickU = null, pickV = null;
+	    for (const n of sideU) { if (n !== u) { pickU = n; break; } }
+	    if (pickU === null) pickU = u;
+	    for (const n of sideV) { if (n !== v) { pickV = n; break; } }
+	    if (pickV === null) pickV = v;
+
+	    // Add the augmenting edge
+	    g.add_edge(pickU, pickV);
+	}
+	iterations++;
+    }
+    // Update UI edge count and show result
+    sync_nu_edges();
+    // Highlight remaining state (should be no bridges)
+    show_bridges();
+}
