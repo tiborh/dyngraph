@@ -584,7 +584,7 @@
 	      <td><input type="button" title="した (Ctrl+Shift+DownArrow)" id="btn_down" onClick="nudge('down');" value="下" /></td>
 	    </tr>
 	    <tr>
-	      <td><div class="label-inline"><input type="button" id="btn_discover_groups" onClick="reset_safe_colour_index();Graph.discover_node_groups(g);" value="Colour Groups" /> or <input type="button" id="btn_connect_groups" onClick="reset_safe_colour_index();Graph.connect_node_groups(g,'cb_rnd_conn_grps');sync_nu_edges();" value="Connect Groups" /> (rand:<input type="checkbox" class="cb" id="cb_rnd_conn_grps" checked>) starting with colour </div><select class="button1" id="sel_starting_safe_colour"></select></td>
+	      <td><div class="label-inline"><input type="button" id="btn_discover_groups" onClick="reset_safe_colour_index();Graph.discover_node_groups(g);" value="Colour Groups" /> or <input type="button" id="btn_connect_groups" onClick="reset_safe_colour_index();Graph.connect_node_groups(g,'cb_rnd_conn_grps');sync_nu_edges();" value="Connect Groups" /> (rand:<input type="checkbox" class="cb" id="cb_rnd_conn_grps" checked>) starting with colour </div><select class="button1" id="sel_starting_safe_colour"></select> <select class="button1" id="sel_named_colour"></select> (all:<input type="checkbox" class="cb" id="cb_all_named_colours">)</td>
 	      <td></td>
 	    </tr>
 	    <tr>
@@ -689,10 +689,63 @@
 		sel_box.options[i].style.backgroundColor = "#" + option;
 	    }
 	    sel_box.selectedIndex = 102;
-	    sel_box.addEventListener("change",function(){
-		safe_colour_index = this.selectedIndex
-		sel_box.style.backgroundColor = "#" + sel_box[sel_box.selectedIndex].value;
+	    // Named colour selector setup
+	    const sel_named = document.getElementById("sel_named_colour");
+	    const cb_all = document.getElementById("cb_all_named_colours");
+	    let current_named_list = named_colours_common;
+	    let hex_to_name = build_hex_to_name_map(current_named_list);
+	    let name_to_hex = build_name_to_hex_map(current_named_list);
+	    populate_named_colours(sel_named, current_named_list);
+	    // Toggle between common and all named colours
+	    cb_all.addEventListener("change", function() {
+		current_named_list = this.checked ? named_colours_all : named_colours_common;
+		hex_to_name = build_hex_to_name_map(current_named_list);
+		name_to_hex = build_name_to_hex_map(current_named_list);
+		populate_named_colours(sel_named, current_named_list);
+		// Sync with current hex selector value
+		const hex = sel_box[sel_box.selectedIndex].value.toUpperCase();
+		sync_named_from_hex(hex);
 	    });
+	    // When hex selector changes -> sync named
+	    sel_box.addEventListener("change",function(){
+		safe_colour_index = this.selectedIndex;
+		sel_box.style.backgroundColor = "#" + sel_box[sel_box.selectedIndex].value;
+		const hex = sel_box[sel_box.selectedIndex].value.toUpperCase();
+		sync_named_from_hex(hex);
+	    });
+	    // When named selector changes -> sync hex
+	    sel_named.addEventListener("change", function() {
+		if (this.selectedIndex === 0) return; // blank option
+		const hex = this.value.toUpperCase();
+		sel_named.style.backgroundColor = "#" + hex;
+		// Find matching hex in safe_colours
+		const idx = safe_colours.indexOf(hex);
+		if (idx !== -1) {
+		    sel_box.selectedIndex = idx;
+		    sel_box.style.backgroundColor = "#" + hex;
+		    safe_colour_index = idx;
+		} else {
+		    // No exact match in hex selector — deselect it visually
+		    sel_box.selectedIndex = -1;
+		    sel_box.style.backgroundColor = "#" + hex;
+		    safe_colour_index = -1;
+		}
+	    });
+	    function sync_named_from_hex(hex) {
+		const name = hex_to_name[hex];
+		if (name) {
+		    // Find option index (+1 for blank)
+		    for (let i = 1; i < sel_named.options.length; i++) {
+			if (sel_named.options[i].value.toUpperCase() === hex) {
+			    sel_named.selectedIndex = i;
+			    sel_named.style.backgroundColor = "#" + hex;
+			    return;
+			}
+		    }
+		}
+		sel_named.selectedIndex = 0; // blank
+		sel_named.style.backgroundColor = "#FFFFFF";
+	    }
 	}
 	function remove_all_options(selectBox) {
 	    while (selectBox.options.length > 0) {

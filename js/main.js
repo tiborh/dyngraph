@@ -133,6 +133,130 @@ function set_mobile_ui(enabled) {
 
 const safe_colours = ["000000","000033","000066","000099","0000CC","0000FF","003300","003333","003366","003399","0033CC","0033FF","006600","006633","006666","006699","0066CC","0066FF","009900","009933","009966","009999","0099CC","0099FF","00CC00","00CC33","00CC66","00CC99","00CCCC","00CCFF","00FF00","00FF33","00FF66","00FF99","00FFCC","00FFFF","330000","330033","330066","330099","3300CC","3300FF","333300","333333","333366","333399","3333CC","3333FF","336600","336633","336666","336699","3366CC","3366FF","339900","339933","339966","339999","3399CC","3399FF","33CC00","33CC33","33CC66","33CC99","33CCCC","33CCFF","33FF00","33FF33","33FF66","33FF99","33FFCC","33FFFF","660000","660033","660066","660099","6600CC","6600FF","663300","663333","663366","663399","6633CC","6633FF","666600","666633","666666","666699","6666CC","6666FF","669900","669933","669966","669999","6699CC","6699FF","66CC00","66CC33","66CC66","66CC99","66CCCC","66CCFF","66FF00","66FF33","66FF66","66FF99","66FFCC","66FFFF","990000","990033","990066","990099","9900CC","9900FF","993300","993333","993366","993399","9933CC","9933FF","996600","996633","996666","996699","9966CC","9966FF","999900","999933","999966","999999","9999CC","9999FF","99CC00","99CC33","99CC66","99CC99","99CCCC","99CCFF","99FF00","99FF33","99FF66","99FF99","99FFCC","99FFFF","CC0000","CC0033","CC0066","CC0099","CC00CC","CC00FF","CC3300","CC3333","CC3366","CC3399","CC33CC","CC33FF","CC6600","CC6633","CC6666","CC6699","CC66CC","CC66FF","CC9900","CC9933","CC9966","CC9999","CC99CC","CC99FF","CCCC00","CCCC33","CCCC66","CCCC99","CCCCCC","CCCCFF","CCFF00","CCFF33","CCFF66","CCFF99","CCFFCC","CCFFFF","FF0000","FF0033","FF0066","FF0099","FF00CC","FF00FF","FF3300","FF3333","FF3366","FF3399","FF33CC","FF33FF","FF6600","FF6633","FF6666","FF6699","FF66CC","FF66FF","FF9900","FF9933","FF9966","FF9999","FF99CC","FF99FF","FFCC00","FFCC33","FFCC66","FFCC99","FFCCCC","FFCCFF","FFFF00","FFFF33","FFFF66","FFFF99","FFFFCC","FFFFFF"].sort((a,b) => Math.floor(rng()*2) == 1 ? -1 : 0 );
 let safe_colour_index = 0;
+
+// Named CSS colours: common subset and full set
+const named_colours_common = [
+    {name:"black",hex:"000000"},{name:"white",hex:"FFFFFF"},
+    {name:"red",hex:"FF0000"},{name:"green",hex:"008000"},{name:"blue",hex:"0000FF"},
+    {name:"yellow",hex:"FFFF00"},{name:"cyan",hex:"00FFFF"},{name:"magenta",hex:"FF00FF"},
+    {name:"orange",hex:"FFA500"},{name:"purple",hex:"800080"},{name:"pink",hex:"FFC0CB"},
+    {name:"brown",hex:"A52A2A"},{name:"gray",hex:"808080"},{name:"grey",hex:"808080"},
+    {name:"lime",hex:"00FF00"},{name:"navy",hex:"000080"},{name:"teal",hex:"008080"},
+    {name:"olive",hex:"808000"},{name:"maroon",hex:"800000"},{name:"aqua",hex:"00FFFF"},
+    {name:"silver",hex:"C0C0C0"},{name:"gold",hex:"FFD700"},{name:"coral",hex:"FF7F50"},
+    {name:"salmon",hex:"FA8072"},{name:"khaki",hex:"F0E68C"},{name:"plum",hex:"DDA0DD"},
+    {name:"violet",hex:"EE82EE"},{name:"indigo",hex:"4B0082"},{name:"crimson",hex:"DC143C"},
+    {name:"tomato",hex:"FF6347"},{name:"tan",hex:"D2B48C"},{name:"sienna",hex:"A0522D"},
+    {name:"orchid",hex:"DA70D6"},{name:"turquoise",hex:"40E0D0"},{name:"chartreuse",hex:"7FFF00"},
+    {name:"chocolate",hex:"D2691E"},{name:"firebrick",hex:"B22222"},{name:"skyblue",hex:"87CEEB"},
+    {name:"steelblue",hex:"4682B4"},{name:"slategray",hex:"708090"}
+];
+const named_colours_all = [
+    {name:"aliceblue",hex:"F0F8FF"},{name:"antiquewhite",hex:"FAEBD7"},
+    {name:"aqua",hex:"00FFFF"},{name:"aquamarine",hex:"7FFFD4"},
+    {name:"azure",hex:"F0FFFF"},{name:"beige",hex:"F5F5DC"},
+    {name:"bisque",hex:"FFE4C4"},{name:"black",hex:"000000"},
+    {name:"blanchedalmond",hex:"FFEBCD"},{name:"blue",hex:"0000FF"},
+    {name:"blueviolet",hex:"8A2BE2"},{name:"brown",hex:"A52A2A"},
+    {name:"burlywood",hex:"DEB887"},{name:"cadetblue",hex:"5F9EA0"},
+    {name:"chartreuse",hex:"7FFF00"},{name:"chocolate",hex:"D2691E"},
+    {name:"coral",hex:"FF7F50"},{name:"cornflowerblue",hex:"6495ED"},
+    {name:"cornsilk",hex:"FFF8DC"},{name:"crimson",hex:"DC143C"},
+    {name:"cyan",hex:"00FFFF"},{name:"darkblue",hex:"00008B"},
+    {name:"darkcyan",hex:"008B8B"},{name:"darkgoldenrod",hex:"B8860B"},
+    {name:"darkgray",hex:"A9A9A9"},{name:"darkgreen",hex:"006400"},
+    {name:"darkkhaki",hex:"BDB76B"},{name:"darkmagenta",hex:"8B008B"},
+    {name:"darkolivegreen",hex:"556B2F"},{name:"darkorange",hex:"FF8C00"},
+    {name:"darkorchid",hex:"9932CC"},{name:"darkred",hex:"8B0000"},
+    {name:"darksalmon",hex:"E9967A"},{name:"darkseagreen",hex:"8FBC8F"},
+    {name:"darkslateblue",hex:"483D8B"},{name:"darkslategray",hex:"2F4F4F"},
+    {name:"darkturquoise",hex:"00CED1"},{name:"darkviolet",hex:"9400D3"},
+    {name:"deeppink",hex:"FF1493"},{name:"deepskyblue",hex:"00BFFF"},
+    {name:"dimgray",hex:"696969"},{name:"dodgerblue",hex:"1E90FF"},
+    {name:"firebrick",hex:"B22222"},{name:"floralwhite",hex:"FFFAF0"},
+    {name:"forestgreen",hex:"228B22"},{name:"fuchsia",hex:"FF00FF"},
+    {name:"gainsboro",hex:"DCDCDC"},{name:"ghostwhite",hex:"F8F8FF"},
+    {name:"gold",hex:"FFD700"},{name:"goldenrod",hex:"DAA520"},
+    {name:"gray",hex:"808080"},{name:"green",hex:"008000"},
+    {name:"greenyellow",hex:"ADFF2F"},{name:"honeydew",hex:"F0FFF0"},
+    {name:"hotpink",hex:"FF69B4"},{name:"indianred",hex:"CD5C5C"},
+    {name:"indigo",hex:"4B0082"},{name:"ivory",hex:"FFFFF0"},
+    {name:"khaki",hex:"F0E68C"},{name:"lavender",hex:"E6E6FA"},
+    {name:"lavenderblush",hex:"FFF0F5"},{name:"lawngreen",hex:"7CFC00"},
+    {name:"lemonchiffon",hex:"FFFACD"},{name:"lightblue",hex:"ADD8E6"},
+    {name:"lightcoral",hex:"F08080"},{name:"lightcyan",hex:"E0FFFF"},
+    {name:"lightgoldenrodyellow",hex:"FAFAD2"},{name:"lightgray",hex:"D3D3D3"},
+    {name:"lightgreen",hex:"90EE90"},{name:"lightpink",hex:"FFB6C1"},
+    {name:"lightsalmon",hex:"FFA07A"},{name:"lightseagreen",hex:"20B2AA"},
+    {name:"lightskyblue",hex:"87CEFA"},{name:"lightslategray",hex:"778899"},
+    {name:"lightsteelblue",hex:"B0C4DE"},{name:"lightyellow",hex:"FFFFE0"},
+    {name:"lime",hex:"00FF00"},{name:"limegreen",hex:"32CD32"},
+    {name:"linen",hex:"FAF0E6"},{name:"magenta",hex:"FF00FF"},
+    {name:"maroon",hex:"800000"},{name:"mediumaquamarine",hex:"66CDAA"},
+    {name:"mediumblue",hex:"0000CD"},{name:"mediumorchid",hex:"BA55D3"},
+    {name:"mediumpurple",hex:"9370DB"},{name:"mediumseagreen",hex:"3CB371"},
+    {name:"mediumslateblue",hex:"7B68EE"},{name:"mediumspringgreen",hex:"00FA9A"},
+    {name:"mediumturquoise",hex:"48D1CC"},{name:"mediumvioletred",hex:"C71585"},
+    {name:"midnightblue",hex:"191970"},{name:"mintcream",hex:"F5FFFA"},
+    {name:"mistyrose",hex:"FFE4E1"},{name:"moccasin",hex:"FFE4B5"},
+    {name:"navajowhite",hex:"FFDEAD"},{name:"navy",hex:"000080"},
+    {name:"oldlace",hex:"FDF5E6"},{name:"olive",hex:"808000"},
+    {name:"olivedrab",hex:"6B8E23"},{name:"orange",hex:"FFA500"},
+    {name:"orangered",hex:"FF4500"},{name:"orchid",hex:"DA70D6"},
+    {name:"palegoldenrod",hex:"EEE8AA"},{name:"palegreen",hex:"98FB98"},
+    {name:"paleturquoise",hex:"AFEEEE"},{name:"palevioletred",hex:"DB7093"},
+    {name:"papayawhip",hex:"FFEFD5"},{name:"peachpuff",hex:"FFDAB9"},
+    {name:"peru",hex:"CD853F"},{name:"pink",hex:"FFC0CB"},
+    {name:"plum",hex:"DDA0DD"},{name:"powderblue",hex:"B0E0E6"},
+    {name:"purple",hex:"800080"},{name:"rebeccapurple",hex:"663399"},
+    {name:"red",hex:"FF0000"},{name:"rosybrown",hex:"BC8F8F"},
+    {name:"royalblue",hex:"4169E1"},{name:"saddlebrown",hex:"8B4513"},
+    {name:"salmon",hex:"FA8072"},{name:"sandybrown",hex:"F4A460"},
+    {name:"seagreen",hex:"2E8B57"},{name:"seashell",hex:"FFF5EE"},
+    {name:"sienna",hex:"A0522D"},{name:"silver",hex:"C0C0C0"},
+    {name:"skyblue",hex:"87CEEB"},{name:"slateblue",hex:"6A5ACD"},
+    {name:"slategray",hex:"708090"},{name:"snow",hex:"FFFAFA"},
+    {name:"springgreen",hex:"00FF7F"},{name:"steelblue",hex:"4682B4"},
+    {name:"tan",hex:"D2B48C"},{name:"teal",hex:"008080"},
+    {name:"thistle",hex:"D8BFD8"},{name:"tomato",hex:"FF6347"},
+    {name:"turquoise",hex:"40E0D0"},{name:"violet",hex:"EE82EE"},
+    {name:"wheat",hex:"F5DEB3"},{name:"white",hex:"FFFFFF"},
+    {name:"whitesmoke",hex:"F5F5F5"},{name:"yellow",hex:"FFFF00"},
+    {name:"yellowgreen",hex:"9ACD32"}
+];
+
+// Build hex->name lookup map (uppercase hex keys)
+function build_hex_to_name_map(list) {
+    const map = {};
+    for (const c of list) map[c.hex.toUpperCase()] = c.name;
+    return map;
+}
+function build_name_to_hex_map(list) {
+    const map = {};
+    for (const c of list) map[c.name] = c.hex.toUpperCase();
+    return map;
+}
+
+/**
+ * Populate the named colour selector with the given colour list.
+ */
+function populate_named_colours(sel, list) {
+    while (sel.options.length > 0) sel.remove(0);
+    // Add blank option for "no match"
+    sel.options.add(new Option("—", "", false));
+    sel.options[0].style.backgroundColor = "#FFFFFF";
+    for (let i = 0; i < list.length; i++) {
+	const opt = new Option(list[i].name, list[i].hex, false);
+	opt.style.backgroundColor = "#" + list[i].hex;
+	// Set text colour for readability on dark backgrounds
+	const r = parseInt(list[i].hex.substring(0,2),16);
+	const g = parseInt(list[i].hex.substring(2,4),16);
+	const b = parseInt(list[i].hex.substring(4,6),16);
+	if ((r*0.299 + g*0.587 + b*0.114) < 128) opt.style.color = "#FFFFFF";
+	sel.options.add(opt);
+    }
+}
+
 let graph_algorithm = "r2r";
 let animate;
 let first_step;
