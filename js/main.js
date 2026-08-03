@@ -895,6 +895,13 @@ function animPhase() {
 	    if (label_frame_counter >= LABEL_UPDATE_INTERVAL) {
 		label_frame_counter = 0;
 		g.updateLabelPositions();
+		update_node_stats_if_live();
+	    }
+	} else {
+	    label_frame_counter++;
+	    if (label_frame_counter >= LABEL_UPDATE_INTERVAL) {
+		label_frame_counter = 0;
+		update_node_stats_if_live();
 	    }
 	}
         setTimeout(animPhase, node_params.anim_timeout);
@@ -1057,4 +1064,39 @@ function bypass_articulations() {
     // Update UI edge count and show result
     sync_nu_edges();
     show_bridges();
+}
+
+/**
+ * Show node degree statistics in a table: how many nodes have how many
+ * edges (degree), sorted from highest to lowest degree.
+ */
+function show_node_stats() {
+    const div = document.getElementById("div_node_stats");
+    // Count degree for each node
+    const degreeCounts = {}; // degree -> count of nodes with that degree
+    for (const i in g.adj) {
+	const deg = g.adj[i].length;
+	degreeCounts[deg] = (degreeCounts[deg] || 0) + 1;
+    }
+    // Sort degrees descending
+    const degrees = Object.keys(degreeCounts).map(Number).sort((a, b) => b - a);
+    // Build table
+    let html = '<table style="border-collapse:collapse;margin-top:4px;">';
+    html += '<tr><th style="border:1px solid #888;padding:2px 6px;">Degree</th>';
+    html += '<th style="border:1px solid #888;padding:2px 6px;">Nodes</th></tr>';
+    for (const deg of degrees) {
+	html += '<tr><td style="border:1px solid #888;padding:2px 6px;text-align:right;">' + deg + '</td>';
+	html += '<td style="border:1px solid #888;padding:2px 6px;text-align:right;">' + degreeCounts[deg] + '</td></tr>';
+    }
+    html += '</table>';
+    div.innerHTML = html;
+}
+
+/**
+ * Update node stats if the "keep updated" checkbox is ticked.
+ * Called from the animation loop.
+ */
+function update_node_stats_if_live() {
+    const cb = document.getElementById("cb_node_stats_live");
+    if (cb && cb.checked) show_node_stats();
 }
