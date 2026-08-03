@@ -798,6 +798,8 @@ function show_bridges() {
     g.edges_overlay_col = "#ff6600";
     g.highlight_nodes = result.articulations;
     g.highlight_nodes_col = "#ff0000";
+    document.getElementById("sp_bridges_info").innerHTML =
+	"B:" + result.bridges.length + " A:" + result.articulations.length;
 }
 
 /**
