@@ -20,5 +20,6 @@ This document exposes the improvement_ideas tracked during development. It is a 
 | node-size-by-group | Configurable Node Size/Color by Group | medium | low | pending | Allow node size and color to be set per-group, not just individually. Would help with group visualization. |
 | graph-algorithms | Add Missing Graph Algorithms | medium | medium | done | Implemented MST (Kruskal with Union-Find), bridges/articulation points (Tarjan), Dijkstra (distance-weighted). Added augment bridges, bypass articulations, and visual overlays. |
 | force-balance | Better Force Balance Tuning | medium | medium | done | Added 7 force-balance presets (Default, Tight Clusters, Spread Out, Tree/Hierarchical, Ring/Circular, Dense/Complete, Slow & Stable) via dropdown selector. Instantly updates all physics sliders. |
+| show-forces | Show Forces on a Given Node | medium | medium | pending | Visualize the attraction and repulsion force vectors acting on a selected node. Display as arrows/lines from the node showing direction and magnitude of each contributing force. |
 
 To propose changes or claim an item, open a GitHub issue referencing the item id above (for example: `#fix-label-placement`).

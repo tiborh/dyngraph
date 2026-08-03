@@ -21,6 +21,7 @@ This ROADMAP summarizes planned work and priorities for the dyngraph project. Fo
 - color-animations: Animated color changes (sine-function controlled)
 - improved-input-formats: Support GML/GraphML/DOT formats
 - node-size-by-group: Configurable node size/color by group (expand existing)
+- show-forces: Visualize forces acting on a selected node (vectors/arrows)
 
 ## Low priority / Nice-to-have
 - safari-support: Test and fix Safari-specific issues
