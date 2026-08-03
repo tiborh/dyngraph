@@ -631,6 +631,10 @@
 	      <td><div class="label-inline"><input type="button" id="btn_reduce_degree" value="Reduce Overconnectedness" onclick="reduce_overconnectedness();"/> (preserve connectivity:<input type="checkbox" class="cb" id="cb_preserve_conn">) <input type="button" id="btn_increase_degree" value="Increase Connectedness" onclick="increase_connectedness();"/></div></td>
 	      <td></td>
 	    </tr>
+	    <tr>
+	      <td><div class="label-inline">Max chain length <input type="number" id="inp_max_chain" value="4" min="2" max="99" style="width:3em;"/> <input type="button" id="btn_shorten_chains" value="Shorten Chains" onclick="shorten_chains_ui();"/></div></td>
+	      <td></td>
+	    </tr>
 	  </table>
 	</div>
       </div>

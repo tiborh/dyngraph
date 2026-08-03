@@ -1255,6 +1255,132 @@ function increase_connectedness() {
 }
 
 /**
+ * Shorten chains (paths of degree-2 nodes) that exceed a maximum length.
+ * A "chain" is a maximal path where every interior node has exactly degree 2.
+ * For each chain exceeding maxLen, a shortcut edge is added from the midpoint
+ * to a non-chain node, splitting the chain roughly in half.
+ * Repeats until no chain exceeds maxLen.
+ *
+ * @param {number} maxLen - Maximum allowed chain length (in edges).
+ */
+function shorten_chains(maxLen) {
+    if (maxLen < 2) maxLen = 2; // minimum meaningful chain
+    let changed = true;
+    let iterations = 0;
+    const MAX_ITER = 100;
+
+    while (changed && iterations < MAX_ITER) {
+	changed = false;
+	iterations++;
+	const chains = find_all_chains();
+
+	for (const chain of chains) {
+	    // chain edges = nodes - 1
+	    const edgeCount = chain.length - 1;
+	    if (edgeCount <= maxLen) continue;
+
+	    // Find midpoint node and add shortcut from it to a non-chain neighbor
+	    const midIdx = Math.floor(chain.length / 2);
+	    const midNode = chain[midIdx];
+
+	    // Connect midNode to a node not in this chain
+	    const chainSet = new Set(chain);
+	    const allKeys = Object.keys(g.ns).map(Number);
+	    const candidates = allKeys.filter(k => !chainSet.has(k) && !g.adjSet[midNode].has(k));
+
+	    if (candidates.length > 0) {
+		const target = candidates[Math.floor(rng() * candidates.length)];
+		g.add_edge(midNode, target);
+		changed = true;
+	    } else {
+		// Fallback: shortcut within chain (quarter points)
+		const q1 = Math.floor(midIdx / 2);
+		const q3 = Math.floor((midIdx + chain.length) / 2);
+		if (q1 !== q3 && !g.adjSet[chain[q1]].has(chain[q3])) {
+		    g.add_edge(chain[q1], chain[q3]);
+		    changed = true;
+		}
+	    }
+	}
+    }
+    sync_nu_edges();
+}
+
+/**
+ * Find all maximal chains in the graph.
+ * A chain is a maximal sequence of nodes where every interior node has degree 2.
+ * Returns array of chains, each an array of node indices (endpoints included).
+ */
+function find_all_chains() {
+    const chains = [];
+    const visited = new Set();
+
+    for (const startStr in g.adj) {
+	const start = Number(startStr);
+	if (visited.has(start)) continue;
+	if (g.adj[start].length !== 2) continue;
+
+	// Walk backward from start to find one endpoint
+	let left = start;
+	let prev = -1;
+	while (g.adj[left].length === 2) {
+	    const neighbors = g.adj[left];
+	    const next = neighbors[0] === prev ? neighbors[1] : neighbors[0];
+	    if (next === start) break; // cycle of all degree-2
+	    prev = left;
+	    left = next;
+	}
+	// left is now the first endpoint (degree != 2), or start if pure cycle
+
+	// Walk forward from left, collecting the chain
+	const chain = [left];
+	prev = -1;
+	let curr = left;
+	while (true) {
+	    let next = -1;
+	    for (const nb of g.adj[curr]) {
+		if (nb === prev) continue;
+		if (g.adj[nb].length === 2 && !visited.has(nb)) {
+		    next = nb;
+		    break;
+		}
+	    }
+	    if (next === -1) break;
+	    chain.push(next);
+	    visited.add(next);
+	    prev = curr;
+	    curr = next;
+	}
+	// Add the far endpoint (degree != 2)
+	if (chain.length > 1) {
+	    const last = chain[chain.length - 1];
+	    for (const nb of g.adj[last]) {
+		if (nb !== chain[chain.length - 2] && g.adj[nb].length !== 2) {
+		    chain.push(nb);
+		    break;
+		}
+	    }
+	}
+	if (chain.length >= 3) chains.push(chain);
+    }
+    return chains;
+}
+
+/**
+ * UI wrapper for shorten_chains — reads max length from input field.
+ */
+function shorten_chains_ui() {
+    const inp = document.getElementById("inp_max_chain");
+    const val = parseInt(inp.value, 10);
+    if (isNaN(val) || val < 2) {
+	inp.value = 4;
+	shorten_chains(4);
+    } else {
+	shorten_chains(val);
+    }
+}
+
+/**
  * Force-balance presets for different graph topologies.
  * Each preset defines physics parameters tuned for specific graph structures.
  * Only overrides force-related params; leaves label/nudge/timeout untouched.
