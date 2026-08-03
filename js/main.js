@@ -1069,7 +1069,11 @@ function bypass_articulations() {
 /**
  * Show node degree statistics in a table: how many nodes have how many
  * edges (degree), sorted from highest to lowest degree.
+ * Preserves previously expanded node label lists across refreshes.
  */
+// Track which degrees have their node list expanded
+const _stats_expanded = new Set();
+
 function show_node_stats() {
     const div = document.getElementById("div_node_stats");
     // Count degree for each node and collect node indices per degree
@@ -1079,6 +1083,7 @@ function show_node_stats() {
 	if (!degreeNodes[deg]) degreeNodes[deg] = [];
 	degreeNodes[deg].push(Number(i));
     }
+    _degree_nodes_cache = degreeNodes;
     // Sort degrees descending
     const degrees = Object.keys(degreeNodes).map(Number).sort((a, b) => b - a);
     // Build table
@@ -1091,11 +1096,14 @@ function show_node_stats() {
     for (const deg of degrees) {
 	const nodeList = degreeNodes[deg];
 	const rowId = 'stats_row_' + deg;
+	const labels = _stats_expanded.has(deg)
+	    ? nodeList.map(i => g.ns[i] ? g.ns[i].name : i).join(', ')
+	    : '';
 	html += '<tr>';
 	html += '<td style="border:1px solid #888;padding:2px 6px;text-align:right;">' + deg + '</td>';
 	html += '<td style="border:1px solid #888;padding:2px 6px;text-align:right;">' + nodeList.length + '</td>';
 	html += '<td style="border:1px solid #888;padding:2px 6px;text-align:center;"><input type="button" value="L" onclick="list_nodes_for_degree(' + deg + ',\'' + rowId + '\');" style="padding:0 4px;"/></td>';
-	html += '<td style="border:1px solid #888;padding:2px 6px;" id="' + rowId + '"></td>';
+	html += '<td style="border:1px solid #888;padding:2px 6px;" id="' + rowId + '">' + labels + '</td>';
 	html += '<td style="border:1px solid #888;padding:2px 6px;text-align:center;"><input type="button" value="H" onclick="highlight_nodes_for_degree(' + deg + ');" style="padding:0 4px;"/></td>';
 	html += '</tr>';
     }
@@ -1103,14 +1111,15 @@ function show_node_stats() {
     div.innerHTML = html;
 }
 
-/** Cached degree->nodes map for highlighting (populated by show_node_stats) */
+/** Cached degree->nodes map for highlighting */
 let _degree_nodes_cache = {};
 
 /**
  * List node names for a given degree in the table cell.
  */
 function list_nodes_for_degree(deg, cellId) {
-    // Rebuild degree map (in case graph changed since table was drawn)
+    _stats_expanded.add(deg);
+    // Rebuild from current graph state
     const nodes = [];
     for (const i in g.adj) {
 	if (g.adj[i].length === deg) nodes.push(Number(i));
