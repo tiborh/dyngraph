@@ -1072,24 +1072,70 @@ function bypass_articulations() {
  */
 function show_node_stats() {
     const div = document.getElementById("div_node_stats");
-    // Count degree for each node
-    const degreeCounts = {}; // degree -> count of nodes with that degree
+    // Count degree for each node and collect node indices per degree
+    const degreeNodes = {}; // degree -> [node indices]
     for (const i in g.adj) {
 	const deg = g.adj[i].length;
-	degreeCounts[deg] = (degreeCounts[deg] || 0) + 1;
+	if (!degreeNodes[deg]) degreeNodes[deg] = [];
+	degreeNodes[deg].push(Number(i));
     }
     // Sort degrees descending
-    const degrees = Object.keys(degreeCounts).map(Number).sort((a, b) => b - a);
+    const degrees = Object.keys(degreeNodes).map(Number).sort((a, b) => b - a);
     // Build table
     let html = '<table style="border-collapse:collapse;margin-top:4px;">';
     html += '<tr><th style="border:1px solid #888;padding:2px 6px;">Degree</th>';
-    html += '<th style="border:1px solid #888;padding:2px 6px;">Nodes</th></tr>';
+    html += '<th style="border:1px solid #888;padding:2px 6px;">Nodes</th>';
+    html += '<th style="border:1px solid #888;padding:2px 6px;">List Nodes</th>';
+    html += '<th style="border:1px solid #888;padding:2px 6px;">Node labels</th>';
+    html += '<th style="border:1px solid #888;padding:2px 6px;">Highlight</th></tr>';
     for (const deg of degrees) {
-	html += '<tr><td style="border:1px solid #888;padding:2px 6px;text-align:right;">' + deg + '</td>';
-	html += '<td style="border:1px solid #888;padding:2px 6px;text-align:right;">' + degreeCounts[deg] + '</td></tr>';
+	const nodeList = degreeNodes[deg];
+	const rowId = 'stats_row_' + deg;
+	html += '<tr>';
+	html += '<td style="border:1px solid #888;padding:2px 6px;text-align:right;">' + deg + '</td>';
+	html += '<td style="border:1px solid #888;padding:2px 6px;text-align:right;">' + nodeList.length + '</td>';
+	html += '<td style="border:1px solid #888;padding:2px 6px;text-align:center;"><input type="button" value="L" onclick="list_nodes_for_degree(' + deg + ',\'' + rowId + '\');" style="padding:0 4px;"/></td>';
+	html += '<td style="border:1px solid #888;padding:2px 6px;" id="' + rowId + '"></td>';
+	html += '<td style="border:1px solid #888;padding:2px 6px;text-align:center;"><input type="button" value="H" onclick="highlight_nodes_for_degree(' + deg + ');" style="padding:0 4px;"/></td>';
+	html += '</tr>';
     }
     html += '</table>';
     div.innerHTML = html;
+}
+
+/** Cached degree->nodes map for highlighting (populated by show_node_stats) */
+let _degree_nodes_cache = {};
+
+/**
+ * List node names for a given degree in the table cell.
+ */
+function list_nodes_for_degree(deg, cellId) {
+    // Rebuild degree map (in case graph changed since table was drawn)
+    const nodes = [];
+    for (const i in g.adj) {
+	if (g.adj[i].length === deg) nodes.push(Number(i));
+    }
+    _degree_nodes_cache[deg] = nodes;
+    const names = nodes.map(i => g.ns[i] ? g.ns[i].name : i);
+    document.getElementById(cellId).innerHTML = names.join(', ');
+}
+
+/**
+ * Highlight nodes with a given degree using the overlay ring system.
+ */
+function highlight_nodes_for_degree(deg) {
+    // Use cached list if available, otherwise compute
+    if (!_degree_nodes_cache[deg]) {
+	const nodes = [];
+	for (const i in g.adj) {
+	    if (g.adj[i].length === deg) nodes.push(Number(i));
+	}
+	_degree_nodes_cache[deg] = nodes;
+    }
+    if (_degree_nodes_cache[deg].length === 0) return;
+    g.highlight_nodes = _degree_nodes_cache[deg];
+    g.highlight_nodes_col = "#ffcc00";
+    g.edges_overlay = [];
 }
 
 /**
